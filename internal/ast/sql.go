@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"io"
 
+	"github.com/jimmyfrasche/etlite/internal/ast/internal/writer"
 	"github.com/jimmyfrasche/etlite/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/token"
-	"github.com/jimmyfrasche/etlite/internal/writer"
 )
 
 //A SQL statement or subquery

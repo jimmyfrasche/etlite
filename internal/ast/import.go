@@ -3,8 +3,8 @@ package ast
 import (
 	"io"
 
+	"github.com/jimmyfrasche/etlite/internal/ast/internal/writer"
 	"github.com/jimmyfrasche/etlite/internal/token"
-	"github.com/jimmyfrasche/etlite/internal/writer"
 )
 
 //Import [format] [header] [device] [table] [limit] [offset]

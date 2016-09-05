@@ -4,11 +4,11 @@ import (
 	"io"
 	"strconv"
 
+	"github.com/jimmyfrasche/etlite/internal/ast/internal/writer"
 	"github.com/jimmyfrasche/etlite/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/null"
 	"github.com/jimmyfrasche/etlite/internal/token"
-	"github.com/jimmyfrasche/etlite/internal/writer"
 )
 
 //Int is a literal int.
