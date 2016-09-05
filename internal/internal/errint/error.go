@@ -43,6 +43,9 @@ func Wrap(e error) error {
 	if e == nil {
 		return nil
 	}
+	if _, ok := e.(*Internal); ok {
+		return e
+	}
 	return &Internal{e, getst()}
 }
 
