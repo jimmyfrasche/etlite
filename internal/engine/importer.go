@@ -3,7 +3,7 @@ package engine
 import (
 	"io"
 
-	"github.com/jimmyfrasche/etlite/internal/builder"
+	"github.com/jimmyfrasche/etlite/internal/engine/internal/builder"
 	"github.com/jimmyfrasche/etlite/internal/errint"
 )
 
