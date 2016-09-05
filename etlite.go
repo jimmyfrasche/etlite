@@ -90,4 +90,12 @@ func main() {
 	if err := vm.Run(bc); err != nil {
 		log.Fatal(err)
 	}
+	errs := vm.Close()
+	if len(errs) > 0 {
+		log.Println("failed to shutdown database connection:")
+		for err := range errs {
+			log.Println(err)
+		}
+		os.Exit(1)
+	}
 }
