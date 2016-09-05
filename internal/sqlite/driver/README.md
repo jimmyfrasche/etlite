@@ -9,7 +9,7 @@ SQLITE_ENABLE_ICU
 
 PCRE is dynamically linked against to support regexp.
 
-Additionally ext/misc/{series,fileio}.c from the sqlite repo are required
+Additionally ext/misc/{series,nextchar,spellfix}.c from the sqlite repo are required
 
 sqlite3_mod_regexp.c is from github.com/mattn/go-sqlite3
 
