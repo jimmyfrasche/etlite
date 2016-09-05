@@ -75,10 +75,8 @@ var _ Writer = (*FileWriter)(nil)
 //NewFileWriter creates a temporary file to write to and replaces name on Close.
 //
 //tmpdirFromEnv is the result of reading TEMP from sys.env.
-func NewFileWriter(tmpdirFromEnv, name string) (*FileWriter, error) {
-	//TODO what if tmp is on a different mount point? Do we check that?
-	//Create the file in the current dir with TempFile? Probably best solution
-	f, err := ioutil.TempFile(tempDir(tmpdirFromEnv), "sqlcons-"+filepath.Base(name))
+func NewFileWriter(name string) (*FileWriter, error) {
+	f, err := ioutil.TempFile(filepath.Split(name))
 	if err != nil {
 		return nil, errsys.Wrap(err)
 	}

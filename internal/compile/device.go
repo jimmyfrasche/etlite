@@ -52,15 +52,11 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 			})
 		} else {
 			c.push(func(m *virt.Machine) error {
-				tmp, err := m.TempDir() //XXX this gotta die at some point
-				if err != nil {
-					return err
-				}
 				name, err := getFilename(m, d.Pos())
 				if err != nil {
 					return err
 				}
-				f, err := device.NewFileWriter(tmp, name)
+				f, err := device.NewFileWriter(name)
 				if err != nil {
 					return err
 				}
