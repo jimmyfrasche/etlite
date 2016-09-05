@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/compile"
+	"github.com/jimmyfrasche/etlite/internal/driver"
 	"github.com/jimmyfrasche/etlite/internal/engine"
 	"github.com/jimmyfrasche/etlite/internal/lex"
 	"github.com/jimmyfrasche/etlite/internal/parse"
-	"github.com/jimmyfrasche/etlite/internal/sqlite/driver"
 )
 
 type autoClose struct { //TODO put in an internal package, change to io.ReadCloser

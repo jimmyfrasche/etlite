@@ -2,12 +2,12 @@ package engine
 
 import (
 	"github.com/jimmyfrasche/etlite/internal/device"
+	"github.com/jimmyfrasche/etlite/internal/driver"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/format/csvfmt"
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
-	"github.com/jimmyfrasche/etlite/internal/sqlite/driver"
 )
 
 //Spec specifies the defaults for a Machine.
