@@ -9,9 +9,9 @@ import (
 
 	"github.com/jimmyfrasche/etlite/internal/compile"
 	"github.com/jimmyfrasche/etlite/internal/driver"
-	"github.com/jimmyfrasche/etlite/internal/engine"
 	"github.com/jimmyfrasche/etlite/internal/lex"
 	"github.com/jimmyfrasche/etlite/internal/parse"
+	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
 type autoClose struct { //TODO put in an internal package, change to io.ReadCloser
@@ -81,7 +81,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	vm, err := engine.New(nil, engine.Spec{
+	vm, err := virt.New(nil, virt.Spec{
 		Database: db,
 	})
 	if err != nil {

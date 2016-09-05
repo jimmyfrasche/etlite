@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/engine"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/token"
+	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
 func tblFrom(nm []token.Value) string {
@@ -19,11 +19,11 @@ func tblFrom(nm []token.Value) string {
 }
 
 func (c *compiler) savepoint() {
-	c.push(engine.MkSavepoint())
+	c.push(virt.MkSavepoint())
 }
 
 func (c *compiler) release() {
-	c.push(engine.MkRelease())
+	c.push(virt.MkRelease())
 }
 
 //handler is only non-nil for subqueries in imports
@@ -53,7 +53,7 @@ func (c *compiler) compileSQL(s *ast.SQL, handler func(*string) (interface{}, er
 		}
 
 		i := s.Subqueries[0]
-		c.push(engine.MkCreateTableFrom(i.Pos(), nm, ddl))
+		c.push(virt.MkCreateTableFrom(i.Pos(), nm, ddl))
 		c.savepoint()
 		c.compileCreateTableAsImport(nm, i)
 		c.release()
@@ -98,15 +98,15 @@ func (c *compiler) compileSQL(s *ast.SQL, handler func(*string) (interface{}, er
 		panic(err)
 	}
 	if handler == nil {
-		c.push(engine.MkQuery(q))
+		c.push(virt.MkQuery(q))
 	} else {
-		c.push(engine.MkPushSubquery(q, handler))
+		c.push(virt.MkPushSubquery(q, handler))
 	}
 
 	//if this was an etl subquery, handle teardown
 	if len(s.Subqueries) > 0 {
 		for i := range s.Subqueries {
-			c.push(engine.MkDropTempTable(tbls[i]))
+			c.push(virt.MkDropTempTable(tbls[i]))
 		}
 		if handler == nil {
 			c.release()

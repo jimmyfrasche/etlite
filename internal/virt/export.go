@@ -1,4 +1,4 @@
-package engine
+package virt
 
 //MkQuery creates an Instruction out of SQL query q.
 //If q returns no columns, it is merely exec'd without export.

@@ -4,29 +4,29 @@ package compile
 
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/engine"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
 type compiler struct {
 	usedStdin bool
 	sqlDepth  int
-	inst      []engine.Instruction
+	inst      []virt.Instruction
 }
 
-func (c *compiler) push(is ...engine.Instruction) {
+func (c *compiler) push(is ...virt.Instruction) {
 	c.inst = append(c.inst, is...)
 }
 
 func (c *compiler) pushpush(v interface{}) {
-	c.push(engine.MkPush(v))
+	c.push(virt.MkPush(v))
 }
 
 //Nodes collects and compiles the nodes on from into instructions for our VM.
-func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []engine.Instruction, err error) {
+func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instruction, err error) {
 	c := &compiler{
-		inst:      make([]engine.Instruction, 0, 128),
+		inst:      make([]virt.Instruction, 0, 128),
 		usedStdin: usedStdin,
 	}
 

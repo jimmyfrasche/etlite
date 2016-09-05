@@ -2,9 +2,9 @@ package compile
 
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/engine"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
 const (
@@ -67,7 +67,7 @@ func (c *compiler) compileImportCommon(i *ast.Import, kind int) {
 	//these are executed and burn up their share of the stack before the next instruction runs
 	c.compileImportDeviceAndFormat(i)
 
-	c.push(func(m *engine.Machine) error {
+	c.push(func(m *virt.Machine) error {
 		offset, err := m.PopInt()
 		if err != nil {
 			return err

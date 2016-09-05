@@ -1,4 +1,4 @@
-package engine
+package virt
 
 import (
 	"github.com/jimmyfrasche/etlite/internal/device"

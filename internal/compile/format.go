@@ -2,13 +2,13 @@ package compile
 
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/engine"
 	"github.com/jimmyfrasche/etlite/internal/format/csvfmt"
 	"github.com/jimmyfrasche/etlite/internal/format/rawfmt"
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
+	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
 const (
@@ -57,7 +57,7 @@ func (c *compiler) formatCSV(f *ast.FormatCSV, read bool) {
 		useCRLF = false
 	}
 
-	back := func(m *engine.Machine) (delim, quote rune, n null.Encoding, hdr bool, err error) {
+	back := func(m *virt.Machine) (delim, quote rune, n null.Encoding, hdr bool, err error) {
 		hdr, err = m.PopBool()
 		if err != nil {
 			return
@@ -75,7 +75,7 @@ func (c *compiler) formatCSV(f *ast.FormatCSV, read bool) {
 	}
 
 	if read { //decoder
-		c.push(func(m *engine.Machine) error {
+		c.push(func(m *virt.Machine) error {
 			d, _, n, hdr, err := back(m)
 			if err != nil {
 				return err
@@ -88,7 +88,7 @@ func (c *compiler) formatCSV(f *ast.FormatCSV, read bool) {
 			})
 		})
 	} else { //encoder
-		c.push(func(m *engine.Machine) error {
+		c.push(func(m *virt.Machine) error {
 			d, _, n, hdr, err := back(m)
 			if err != nil {
 				return err
@@ -118,7 +118,7 @@ func (c *compiler) formatRaw(f *ast.FormatRaw, read bool) {
 		useCRLF = false
 	}
 
-	back := func(m *engine.Machine) (delim rune, n null.Encoding, hdr bool, err error) {
+	back := func(m *virt.Machine) (delim rune, n null.Encoding, hdr bool, err error) {
 		hdr, err = m.PopBool()
 		if err != nil {
 			return
@@ -132,7 +132,7 @@ func (c *compiler) formatRaw(f *ast.FormatRaw, read bool) {
 	}
 
 	if read { //decoder
-		c.push(func(m *engine.Machine) error {
+		c.push(func(m *virt.Machine) error {
 			d, n, hdr, err := back(m)
 			if err != nil {
 				return err
@@ -146,7 +146,7 @@ func (c *compiler) formatRaw(f *ast.FormatRaw, read bool) {
 			})
 		})
 	} else { //encoder
-		c.push(func(m *engine.Machine) error {
+		c.push(func(m *virt.Machine) error {
 			d, n, hdr, err := back(m)
 			if err != nil {
 				return err

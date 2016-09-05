@@ -1,10 +1,10 @@
-package engine
+package virt
 
 import (
 	"io"
 
-	"github.com/jimmyfrasche/etlite/internal/engine/internal/builder"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/virt/internal/builder"
 )
 
 //TODO create an enum of current states and track transitions within methods and instructions

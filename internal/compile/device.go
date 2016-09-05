@@ -6,11 +6,11 @@ import (
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/device"
-	"github.com/jimmyfrasche/etlite/internal/engine"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/token"
+	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
 const (
@@ -37,7 +37,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 	case *ast.DeviceFile: //always pushes filename
 		c.mandatoryStrOrSub(d.Name, "file name") //pushes filename
 		if read {
-			c.push(func(m *engine.Machine) error {
+			c.push(func(m *virt.Machine) error {
 				name, err := getFilename(m, d.Pos())
 				if err != nil {
 					return err
@@ -51,7 +51,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 				return m.SetInput(f, tblnameFromFilename(name))
 			})
 		} else {
-			c.push(func(m *engine.Machine) error {
+			c.push(func(m *virt.Machine) error {
 				tmp, err := m.TempDir() //XXX this gotta die at some point
 				if err != nil {
 					return err
@@ -86,7 +86,7 @@ func tblnameFromFilename(f string) string {
 	return escape.String(base)
 }
 
-func getFilename(m *engine.Machine, p token.Position) (string, error) {
+func getFilename(m *virt.Machine, p token.Position) (string, error) {
 	s, err := m.PopString()
 	if err != nil {
 		return "", err
@@ -97,10 +97,10 @@ func getFilename(m *engine.Machine, p token.Position) (string, error) {
 	return *s, nil
 }
 
-func setStdin(m *engine.Machine) error {
+func setStdin(m *virt.Machine) error {
 	return m.SetInput(device.Stdin, "[-]")
 }
 
-func setStdout(m *engine.Machine) error {
+func setStdout(m *virt.Machine) error {
 	return m.SetOutput(device.Stdout)
 }
