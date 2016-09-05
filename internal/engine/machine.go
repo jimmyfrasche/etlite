@@ -1,13 +1,13 @@
 package engine
 
 import (
+	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/format/csvfmt"
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
 	"github.com/jimmyfrasche/etlite/internal/sqlite/driver"
-	"github.com/jimmyfrasche/etlite/internal/stdio"
 )
 
 //Spec specifies the defaults for a Machine.
@@ -16,9 +16,9 @@ type Spec struct {
 	//for an in-memory database.
 	Database string
 	//Input is the initial input device, or stdin if nil.
-	Input stdio.Reader
+	Input device.Reader
 	//Output is the initial output device, or stdout if nil.
-	Output stdio.Writer
+	Output device.Writer
 	//Encoder is the initial encoder,
 	//or a csv encoder with platform specific EOL encoding if nil.
 	Encoder format.Encoder
@@ -37,8 +37,8 @@ type Spec struct {
 type Machine struct {
 	name       string
 	conn       *driver.Conn
-	output     stdio.Writer
-	input      stdio.Reader
+	output     device.Writer
+	input      device.Reader
 	encoder    format.Encoder
 	decoder    format.Decoder
 	saveprefix string
@@ -71,11 +71,11 @@ func New(savepoints []string, s Spec) (*Machine, error) {
 	}
 	o := s.Output
 	if o == nil {
-		o = stdio.Stdout
+		o = device.Stdout
 	}
 	in := s.Input
 	if in == nil {
-		in = stdio.Stdin
+		in = device.Stdin
 	}
 	e := s.Encoder
 	if e == nil {
@@ -240,7 +240,7 @@ func (m *Machine) PopRune() (rune, error) {
 	return r, nil
 }
 
-func (m *Machine) SetOutput(o stdio.Writer) error {
+func (m *Machine) SetOutput(o device.Writer) error {
 	if o == nil {
 		return errint.New("no output device specified")
 	}
@@ -255,7 +255,7 @@ func (m *Machine) SetOutput(o stdio.Writer) error {
 	return nil
 }
 
-func (m *Machine) SetInput(in stdio.Reader, derivedTableName string) error {
+func (m *Machine) SetInput(in device.Reader, derivedTableName string) error {
 	if in == nil {
 		return errint.New("no input device specified")
 	}

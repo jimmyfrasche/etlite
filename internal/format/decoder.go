@@ -1,6 +1,6 @@
 package format
 
-import "github.com/jimmyfrasche/etlite/internal/stdio"
+import "github.com/jimmyfrasche/etlite/internal/device"
 
 //Decoder specifies the protocol for a format to be imported.
 //
@@ -23,7 +23,7 @@ type Decoder interface {
 	//ReadHeader must never return data and an error.
 	//
 	//Clients must not assume it is safe to modify the returned slice.
-	ReadHeader(header []string, r stdio.Reader) (string, []string, error)
+	ReadHeader(header []string, r device.Reader) (string, []string, error)
 
 	Skip(rows int) error
 

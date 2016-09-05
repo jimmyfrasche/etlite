@@ -4,9 +4,9 @@ import (
 	"encoding/csv"
 	"fmt"
 
+	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
-	"github.com/jimmyfrasche/etlite/internal/stdio"
 )
 
 //Encoder is a CSV encoder.
@@ -31,7 +31,7 @@ func (e *Encoder) ctx() string {
 }
 
 //WriteHeader writes the header as the first row of the CSV.
-func (e *Encoder) WriteHeader(hdr []string, w stdio.Writer) error {
+func (e *Encoder) WriteHeader(hdr []string, w device.Writer) error {
 	e.nm = w.Name()
 	e.lno = 1
 	e.csv = csv.NewWriter(w.Unwrap())

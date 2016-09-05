@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
-	"github.com/jimmyfrasche/etlite/internal/stdio"
 )
 
 //Decoder is a CSV decoder.
@@ -34,7 +34,7 @@ func (d *Decoder) ctx() string {
 var _ format.Decoder = (*Decoder)(nil)
 
 //ReadHeader configures the decoder and returns the first row of the CSV.
-func (d *Decoder) ReadHeader(possibleHeader []string, in stdio.Reader) (string, []string, error) {
+func (d *Decoder) ReadHeader(possibleHeader []string, in device.Reader) (string, []string, error) {
 	if len(possibleHeader) == 0 && d.NoHeader {
 		return "", nil, format.ErrNoHeader
 	}

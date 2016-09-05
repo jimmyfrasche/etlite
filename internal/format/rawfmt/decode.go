@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/internal/errsys"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
-	"github.com/jimmyfrasche/etlite/internal/stdio"
 )
 
 //Decoder decodes the raw format
@@ -38,7 +38,7 @@ func (d *Decoder) ctx() string {
 var _ format.Decoder = (*Decoder)(nil)
 
 //ReadHeader decodes the header
-func (d *Decoder) ReadHeader(potentialHeader []string, r stdio.Reader) (string, []string, error) {
+func (d *Decoder) ReadHeader(potentialHeader []string, r device.Reader) (string, []string, error) {
 	if len(potentialHeader) == 0 && d.NoHeader {
 		return "", nil, format.ErrNoHeader
 	}

@@ -1,7 +1,7 @@
 //Package stdio wraps stdin, stdout, and file operations with the semantics
 //required elsewhere in this system and that work around any consequences
 //of the sys.env table being user-writable.
-package stdio
+package device
 
 import (
 	"bufio"

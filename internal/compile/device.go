@@ -5,11 +5,11 @@ import (
 	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
+	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/engine"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
-	"github.com/jimmyfrasche/etlite/internal/stdio"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
@@ -42,7 +42,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 				if err != nil {
 					return err
 				}
-				f, err := stdio.NewFileReader(name)
+				f, err := device.NewFileReader(name)
 				if err != nil {
 					return err
 				}
@@ -60,7 +60,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 				if err != nil {
 					return err
 				}
-				f, err := stdio.NewFileWriter(tmp, name)
+				f, err := device.NewFileWriter(tmp, name)
 				if err != nil {
 					return err
 				}
@@ -98,9 +98,9 @@ func getFilename(m *engine.Machine, p token.Position) (string, error) {
 }
 
 func setStdin(m *engine.Machine) error {
-	return m.SetInput(stdio.Stdin, "[-]")
+	return m.SetInput(device.Stdin, "[-]")
 }
 
 func setStdout(m *engine.Machine) error {
-	return m.SetOutput(stdio.Stdout)
+	return m.SetOutput(device.Stdout)
 }

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/internal/errsys"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
-	"github.com/jimmyfrasche/etlite/internal/stdio"
 )
 
 //Encoder encodes the raw format
@@ -18,7 +18,7 @@ type Encoder struct {
 
 	NoHeader bool //If true, do not write header to output
 
-	w        stdio.Writer
+	w        device.Writer
 	tab, eol string
 	lno      int
 }
@@ -38,7 +38,7 @@ func (e *Encoder) write(s string) error {
 }
 
 //WriteHeader encodes the header.
-func (e *Encoder) WriteHeader(hdr []string, w stdio.Writer) error {
+func (e *Encoder) WriteHeader(hdr []string, w device.Writer) error {
 	e.w = w
 	e.eol = "\n"
 	if e.UseCRLF {
