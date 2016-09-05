@@ -8,7 +8,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/format/csvfmt"
 	"github.com/jimmyfrasche/etlite/internal/format/rawfmt"
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
-	"github.com/jimmyfrasche/etlite/internal/null"
+	"github.com/jimmyfrasche/etlite/internal/internal/null"
 )
 
 const (

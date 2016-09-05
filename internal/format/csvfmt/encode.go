@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jimmyfrasche/etlite/internal/format"
-	"github.com/jimmyfrasche/etlite/internal/null"
+	"github.com/jimmyfrasche/etlite/internal/internal/null"
 	"github.com/jimmyfrasche/etlite/internal/stdio"
 )
 

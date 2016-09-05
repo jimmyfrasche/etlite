@@ -7,7 +7,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/ast/internal/writer"
 	"github.com/jimmyfrasche/etlite/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
-	"github.com/jimmyfrasche/etlite/internal/null"
+	"github.com/jimmyfrasche/etlite/internal/internal/null"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 

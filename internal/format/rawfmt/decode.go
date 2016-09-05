@@ -7,7 +7,7 @@ import (
 
 	"github.com/jimmyfrasche/etlite/internal/errsys"
 	"github.com/jimmyfrasche/etlite/internal/format"
-	"github.com/jimmyfrasche/etlite/internal/null"
+	"github.com/jimmyfrasche/etlite/internal/internal/null"
 	"github.com/jimmyfrasche/etlite/internal/stdio"
 )
 
