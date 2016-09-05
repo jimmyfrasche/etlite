@@ -3,11 +3,11 @@ package compile
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/engine"
-	"github.com/jimmyfrasche/etlite/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/format/csvfmt"
 	"github.com/jimmyfrasche/etlite/internal/format/rawfmt"
+	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/null"
 )
 
