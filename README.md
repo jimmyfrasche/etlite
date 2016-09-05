@@ -21,6 +21,8 @@ NULL is a string used to indicate an SQL NULL value in the string output. If not
 
 RAW is CSV without a facility for quoting and `\t` as the default delimiter.
 
+The device is either FILE filename or STDIN/STDOUT.
+
 Any SQLite that returns rows is exported using the current DISPLAY settings.
 
 As a statement, IMPORT creates a table and imports data into it.
