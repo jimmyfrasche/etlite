@@ -7,8 +7,8 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/internal/runefrom"
 	"github.com/jimmyfrasche/etlite/internal/null"
-	"github.com/jimmyfrasche/etlite/internal/runefrom"
 )
 
 func handleStr(s *string) (interface{}, error) {

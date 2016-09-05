@@ -4,8 +4,8 @@ import (
 	"strconv"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
+	"github.com/jimmyfrasche/etlite/internal/internal/runefrom"
 	"github.com/jimmyfrasche/etlite/internal/parse/internal/interpolate"
-	"github.com/jimmyfrasche/etlite/internal/runefrom"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
