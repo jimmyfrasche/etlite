@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"os"
 
-	"github.com/jimmyfrasche/etlite/internal/errsys"
+	"github.com/jimmyfrasche/etlite/internal/internal/errsys"
 )
 
 type stdout struct {

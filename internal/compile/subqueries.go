@@ -5,8 +5,8 @@ import (
 	"strconv"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/errint"
-	"github.com/jimmyfrasche/etlite/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
 	"github.com/jimmyfrasche/etlite/internal/internal/runefrom"
 )

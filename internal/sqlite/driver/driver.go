@@ -39,7 +39,7 @@ import (
 	"errors"
 	"unsafe"
 
-	"github.com/jimmyfrasche/etlite/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 )
 
 //bulkRowsAtOnce is how many rows we strive to handle at a time

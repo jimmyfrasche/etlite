@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/jimmyfrasche/etlite/internal/engine/internal/builder"
-	"github.com/jimmyfrasche/etlite/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 )
 
 //TODO create an enum of current states and track transitions within methods and instructions

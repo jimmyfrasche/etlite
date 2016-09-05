@@ -6,8 +6,8 @@ import (
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/engine"
-	"github.com/jimmyfrasche/etlite/internal/errint"
-	"github.com/jimmyfrasche/etlite/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/stdio"
 	"github.com/jimmyfrasche/etlite/internal/token"

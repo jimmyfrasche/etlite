@@ -5,7 +5,7 @@ import (
 	"io"
 
 	"github.com/jimmyfrasche/etlite/internal/ast/internal/writer"
-	"github.com/jimmyfrasche/etlite/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 

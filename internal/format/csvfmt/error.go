@@ -3,8 +3,8 @@ package csvfmt
 import (
 	"encoding/csv"
 
-	"github.com/jimmyfrasche/etlite/internal/errsys"
 	"github.com/jimmyfrasche/etlite/internal/format"
+	"github.com/jimmyfrasche/etlite/internal/internal/errsys"
 )
 
 func wrap(c interface {

@@ -2,7 +2,7 @@ package compile
 
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 )
 
 func (c *compiler) compileDisplay(d *ast.Display) {

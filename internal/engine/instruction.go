@@ -1,7 +1,7 @@
 package engine
 
 import (
-	"github.com/jimmyfrasche/etlite/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 

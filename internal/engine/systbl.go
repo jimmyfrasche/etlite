@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/jimmyfrasche/etlite/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 )
 
 //multiexec execs each query in qs in turn,

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jimmyfrasche/etlite/internal/errsys"
+	"github.com/jimmyfrasche/etlite/internal/internal/errsys"
 )
 
 //FileReader is a file used only for reading

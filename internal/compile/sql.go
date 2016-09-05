@@ -5,7 +5,7 @@ import (
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/engine"
-	"github.com/jimmyfrasche/etlite/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
