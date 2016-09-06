@@ -6,6 +6,7 @@ import (
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/device"
+	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
@@ -94,9 +95,9 @@ func getFilename(m *virt.Machine, p token.Position) (string, error) {
 }
 
 func setStdin(m *virt.Machine) error {
-	return m.SetInput(device.Stdin, "[-]")
+	return m.SetInput(std.In, "[-]")
 }
 
 func setStdout(m *virt.Machine) error {
-	return m.SetOutput(device.Stdout)
+	return m.SetOutput(std.Out)
 }

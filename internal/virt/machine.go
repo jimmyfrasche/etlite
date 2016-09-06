@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/jimmyfrasche/etlite/internal/device"
+	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/driver"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/format/rawfmt"
@@ -64,11 +65,11 @@ func New(savepoints []string, s Spec) (*Machine, error) {
 	}
 	o := s.Output
 	if o == nil {
-		o = device.Stdout
+		o = std.Out
 	}
 	in := s.Input
 	if in == nil {
-		in = device.Stdin
+		in = std.In
 	}
 	e := s.Encoder
 	if e == nil {
