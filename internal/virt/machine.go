@@ -1,6 +1,8 @@
 package virt
 
 import (
+	"os"
+
 	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/driver"
 	"github.com/jimmyfrasche/etlite/internal/format"
@@ -8,6 +10,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
+	"github.com/jimmyfrasche/etlite/internal/virt/internal/sysdb"
 )
 
 //Spec specifies the defaults for a Machine.
@@ -27,7 +30,7 @@ type Spec struct {
 	Decoder format.Decoder
 	//Environ is the environment to use to populate sys.env,
 	//or os.Environ if nil.
-	Environ map[string]string
+	Environ []string
 	//Args is used to populate sys.arg.
 	//There is no default for Args.
 	Args []string
@@ -52,6 +55,7 @@ type Machine struct {
 	//not at users behest
 	tmpTables map[string]bool
 
+	sys                         *sysdb.Sysdb
 	readEnv, tables, tmpFromEnv *driver.Stmt
 	savepointStmt, releaseStmt  *driver.Stmt
 
@@ -97,17 +101,13 @@ func New(savepoints []string, s Spec) (*Machine, error) {
 		tmpTables:  map[string]bool{},
 		stack:      make([]interface{}, 0, 128),
 	}
-
-	if err = m.createSystab(s.Environ, s.Args); err != nil {
-		m.conn.Close()
-		return nil, err
+	if s.Environ == nil {
+		s.Environ = os.Environ()
 	}
 
-	m.tables, err = m.conn.Prepare(`SELECT name FROM sqlite_master WHERE type = 'table'
-UNION ALL
-SELECT name FROM sqlite_temp_master WHERE type = 'table'`) //TODO rip this stuff out
+	m.sys, err = sysdb.New(m.conn, s.Args, s.Environ)
 	if err != nil {
-		return nil, errint.Wrap(err)
+		return nil, err
 	}
 
 	m.savepointStmt, err = m.conn.Prepare(`SAVEPOINT [1]`)
@@ -138,12 +138,17 @@ func (m *Machine) Close() (errs []error) {
 	err(m.input.Close())
 	err(m.encoder.Close())
 	err(m.decoder.Close())
-	err(m.readEnv.Close())
-	err(m.tables.Close())
+	err(m.sys.Close())
 	err(m.savepointStmt.Close())
 	err(m.releaseStmt.Close())
 	err(m.conn.Close())
 	return
+}
+
+//Environ dumps sys.env (which the user is free to modify)
+//in Go readable format.
+func (m *Machine) Environ() ([]string, error) {
+	return m.sys.Environ()
 }
 
 //Name reports the name of the main database.
