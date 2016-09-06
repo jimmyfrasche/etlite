@@ -6,7 +6,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/driver"
 	"github.com/jimmyfrasche/etlite/internal/format"
-	"github.com/jimmyfrasche/etlite/internal/format/csvfmt"
+	"github.com/jimmyfrasche/etlite/internal/format/rawfmt"
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
@@ -72,11 +72,17 @@ func New(savepoints []string, s Spec) (*Machine, error) {
 	}
 	e := s.Encoder
 	if e == nil {
-		e = &csvfmt.Encoder{UseCRLF: eol.Default}
+		e = &rawfmt.Encoder{
+			UseCRLF:  eol.Default,
+			NoHeader: true,
+		}
 	}
 	dec := s.Decoder
 	if dec == nil {
-		dec = &csvfmt.Decoder{}
+		dec = &rawfmt.Decoder{
+			UseCRLF:  eol.Default,
+			NoHeader: true,
+		}
 	}
 	m := &Machine{
 		name:    db,
