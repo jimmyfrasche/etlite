@@ -1,4 +1,5 @@
-package device
+//Package file implements file devices.
+package file
 
 import (
 	"bufio"
@@ -6,21 +7,22 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/internal/errsys"
 )
 
-//FileReader is a file used only for reading
+//Reader is a file used only for reading
 //that satisfies this packages Reader interface.
-type FileReader struct {
+type Reader struct {
 	name string
 	f    *os.File
 	*bufio.Reader
 }
 
-var _ Reader = (*FileReader)(nil)
+var _ device.Reader = (*Reader)(nil)
 
-//NewFileReader attempts to open a file for reading.
-func NewFileReader(name string) (*FileReader, error) {
+//NewReader attempts to open a file for reading.
+func NewReader(name string) (*Reader, error) {
 	f, err := os.Open(name)
 	if err != nil {
 		return nil, errsys.Wrap(err)
@@ -34,7 +36,7 @@ func NewFileReader(name string) (*FileReader, error) {
 		_ = f.Close()
 		return nil, errsys.Newf("%s is a directory", name)
 	}
-	return &FileReader{
+	return &Reader{
 		name:   name,
 		f:      f,
 		Reader: bufio.NewReader(f),
@@ -42,17 +44,17 @@ func NewFileReader(name string) (*FileReader, error) {
 }
 
 //Name returns the file being read.
-func (f *FileReader) Name() string {
+func (f *Reader) Name() string {
 	return f.name
 }
 
 //Unwrap returns the underlying bufio.Reader of this file.
-func (f *FileReader) Unwrap() *bufio.Reader {
+func (f *Reader) Unwrap() *bufio.Reader {
 	return f.Reader
 }
 
 //Close f.
-func (f *FileReader) Close() error {
+func (f *Reader) Close() error {
 	err := errsys.Wrap(f.Close())
 	f.name = "<BROKEN FILE HANDLE>"
 	f.f = nil
@@ -61,26 +63,24 @@ func (f *FileReader) Close() error {
 	return err
 }
 
-//FileWriter represents a file used for writing.
+//Writer represents a file used for writing.
 //
 //It is written to a tmp file and renamed on Close.
-type FileWriter struct {
+type Writer struct {
 	name string
 	f    *os.File //the tmp file
 	*bufio.Writer
 }
 
-var _ Writer = (*FileWriter)(nil)
+var _ device.Writer = (*Writer)(nil)
 
-//NewFileWriter creates a temporary file to write to and replaces name on Close.
-//
-//tmpdirFromEnv is the result of reading TEMP from sys.env.
-func NewFileWriter(name string) (*FileWriter, error) {
+//NewWriter creates a temporary file to write to and replaces name on Close.
+func NewWriter(name string) (*Writer, error) {
 	f, err := ioutil.TempFile(filepath.Split(name))
 	if err != nil {
 		return nil, errsys.Wrap(err)
 	}
-	return &FileWriter{
+	return &Writer{
 		name:   name,
 		f:      f,
 		Writer: bufio.NewWriter(f),
@@ -88,17 +88,17 @@ func NewFileWriter(name string) (*FileWriter, error) {
 }
 
 //Name reports the name the file will have when closed.
-func (f *FileWriter) Name() string {
+func (f *Writer) Name() string {
 	return f.name
 }
 
 //Unwrap returns the underlying bufio.Writer.
-func (f *FileWriter) Unwrap() *bufio.Writer {
+func (f *Writer) Unwrap() *bufio.Writer {
 	return f.Writer
 }
 
 //Close flushes, syncs, and renames the tmp file to Name().
-func (f *FileWriter) Close() error {
+func (f *Writer) Close() error {
 	//even if something fails we need to break the file handle to prevent
 	//undetected erroneous state.
 	defer func() {

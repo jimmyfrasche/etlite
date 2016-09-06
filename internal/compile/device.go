@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/device"
+	"github.com/jimmyfrasche/etlite/internal/device/file"
 	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
@@ -43,7 +43,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 				if err != nil {
 					return err
 				}
-				f, err := device.NewFileReader(name)
+				f, err := file.NewReader(name)
 				if err != nil {
 					return err
 				}
@@ -57,7 +57,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 				if err != nil {
 					return err
 				}
-				f, err := device.NewFileWriter(name)
+				f, err := file.NewWriter(name)
 				if err != nil {
 					return err
 				}
