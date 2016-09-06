@@ -11,24 +11,6 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/internal/runefrom"
 )
 
-func handleStr(s *string) (interface{}, error) {
-	if s == nil {
-		return "", nil
-	}
-	return *s, nil
-}
-
-func (c *compiler) strOrSub(f ast.Node) {
-	switch f := f.(type) {
-	default:
-		panic(errint.Newf("expected string or subquery, got %T", f))
-	case *ast.String:
-		c.pushpush(f.Value)
-	case *ast.SQL:
-		c.compileSQL(f, handleStr)
-	}
-}
-
 func (c *compiler) mandatoryStrOrSub(f ast.Node, ctx string) {
 	switch f := f.(type) {
 	default:
