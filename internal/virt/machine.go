@@ -38,26 +38,15 @@ type Spec struct {
 
 //Machine represents an execution context for a script.
 type Machine struct {
-	name       string
-	conn       *driver.Conn
-	output     device.Writer
-	input      device.Reader
-	encoder    format.Encoder
-	decoder    format.Decoder
-	saveprefix string
+	name    string
+	conn    *driver.Conn
+	output  device.Writer
+	input   device.Reader
+	encoder format.Encoder
+	decoder format.Decoder
 
-	//number of temporary save point names used
-	tmpSP int
-	//number of temporary tables used
-	tmpT int
-
-	//temporary tables created internally,
-	//not at users behest
-	tmpTables map[string]bool
-
-	sys                         *sysdb.Sysdb
-	readEnv, tables, tmpFromEnv *driver.Stmt
-	savepointStmt, releaseStmt  *driver.Stmt
+	sys                        *sysdb.Sysdb
+	savepointStmt, releaseStmt *driver.Stmt
 
 	stack            []interface{}
 	derivedTableName string
@@ -89,17 +78,14 @@ func New(savepoints []string, s Spec) (*Machine, error) {
 	if dec == nil {
 		dec = &csvfmt.Decoder{}
 	}
-	saveprefix := uniqIdent("-internal-savepoint-", savepoints, map[string]bool{}) //TODO rip this stuff out
 	m := &Machine{
-		name:       db,
-		conn:       c,
-		output:     o,
-		input:      in,
-		encoder:    e,
-		decoder:    dec,
-		saveprefix: saveprefix,
-		tmpTables:  map[string]bool{},
-		stack:      make([]interface{}, 0, 128),
+		name:    db,
+		conn:    c,
+		output:  o,
+		input:   in,
+		encoder: e,
+		decoder: dec,
+		stack:   make([]interface{}, 0, 128),
 	}
 	if s.Environ == nil {
 		s.Environ = os.Environ()
