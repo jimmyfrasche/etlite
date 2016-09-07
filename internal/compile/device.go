@@ -88,10 +88,10 @@ func getFilename(m *virt.Machine, p token.Position) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if s == nil || *s == "" {
+	if s == "" {
 		return "", errusr.New(p, "no file name provided by subquery")
 	}
-	return *s, nil
+	return s, nil
 }
 
 func setStdin(m *virt.Machine) error {

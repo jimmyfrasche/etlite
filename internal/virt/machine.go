@@ -163,15 +163,15 @@ func (m *Machine) pop() (val interface{}, err error) {
 	return val, nil
 }
 
-//PopString pops a *string off the stack.
-func (m *Machine) PopString() (*string, error) {
+//PopString pops a string off the stack.
+func (m *Machine) PopString() (string, error) {
 	v, err := m.pop()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	s, ok := v.(*string)
+	s, ok := v.(string)
 	if !ok {
-		return nil, errint.Newf("expected *string on stack but found %#v", v)
+		return "", errint.Newf("expected string on stack but found %#v", v)
 	}
 	return s, nil
 }
