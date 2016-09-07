@@ -30,7 +30,7 @@ func (p *parser) useStmt(t token.Value) *ast.Use {
 	}
 
 	t = p.next()
-	if t.Literal("DATABASE") {
+	if t.Literal("DATABASE") || t.Literal("DB") {
 		t = p.next()
 	}
 
