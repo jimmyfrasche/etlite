@@ -73,6 +73,7 @@ func (m *Machine) BulkInsert(name string, header []string, limit, offset int) er
 	b.CSV(header, func(string) {
 		b.Push("?")
 	})
+	b.Push(")")
 
 	p, err := m.conn.Prepare(b.Join(" "))
 	if err != nil {
