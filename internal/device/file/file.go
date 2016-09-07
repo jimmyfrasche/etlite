@@ -55,7 +55,7 @@ func (f *Reader) Unwrap() *bufio.Reader {
 
 //Close f.
 func (f *Reader) Close() error {
-	err := errsys.Wrap(f.Close())
+	err := errsys.Wrap(f.f.Close())
 	f.name = "<BROKEN FILE HANDLE>"
 	f.f = nil
 	f.Reader.Reset(nil)
