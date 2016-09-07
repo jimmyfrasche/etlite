@@ -97,7 +97,11 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 		i.Device, t = p.deviceExpr(t)
 	}
 
-	if !t.Literal("LIMIT") && !t.Literal("OFFSET") {
+	end := token.Semicolon
+	if subquery {
+		end = token.RParen
+	}
+	if !t.Literal("LIMIT") && !t.Literal("OFFSET") && t.Kind != end {
 		s, ok := t.Unescape()
 		if !ok {
 			panic(p.expected("table name", t))
@@ -116,11 +120,8 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 		i.Offset, t = p.intOrSq(t, false)
 	}
 
-	if subquery && t.Kind != token.RParen {
-		panic(p.expected(token.RParen, t))
-	}
-	if !subquery && t.Kind != token.Semicolon {
-		panic(p.expected(token.Semicolon, t))
+	if t.Kind != end {
+		panic(p.expected(end, t))
 	}
 
 	return i
