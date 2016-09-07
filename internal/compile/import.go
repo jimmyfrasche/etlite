@@ -93,6 +93,9 @@ func (c *compiler) compileImportCommon(i *ast.Import, kind int) {
 		//if noTable the stated name always win; if tempTable the computed name always wins.
 		if kind == normal && i.Table == "" {
 			i.Table = dname
+			if i.Table == "" {
+				i.Table = m.DerivedTableName()
+			}
 		}
 		//if noTable the header is computed at runtime with a query; otherwise the declared header wins.
 		if kind != noTable && len(header) == 0 {
