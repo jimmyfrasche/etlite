@@ -84,7 +84,7 @@ func (c *compiler) formatCSV(f *ast.FormatCSV, read bool) {
 				Null:     n,
 				Comma:    d,
 				Strict:   f.Strict,
-				NoHeader: hdr,
+				NoHeader: !hdr,
 			})
 		})
 	} else { //encoder
