@@ -27,7 +27,7 @@ func (p *parser) maybeSq(t token.Value) (*ast.SQL, token.Value) {
 }
 
 func (p *parser) intOrSq(t token.Value, limit bool) (ast.IntOrSQL, token.Value) {
-	var n ast.IntOrSQL
+	var n *ast.SQL
 	if n, t = p.maybeSq(t); n != nil {
 		return n, t
 	}
@@ -52,7 +52,7 @@ func (p *parser) intOrSq(t token.Value, limit bool) (ast.IntOrSQL, token.Value) 
 }
 
 func (p *parser) runeOrSq(t token.Value, what string) (ast.RuneOrSQL, token.Value) {
-	var n ast.RuneOrSQL
+	var n *ast.SQL
 	if n, t = p.maybeSq(t); n != nil {
 		return n, t
 	}

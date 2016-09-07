@@ -11,7 +11,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/internal/runefrom"
 )
 
-func (c *compiler) mandatoryStrOrSub(f ast.Node, ctx string) {
+func (c *compiler) mandatoryStrOrSub(f ast.StringOrSQL, ctx string) {
 	switch f := f.(type) {
 	default:
 		panic(errint.Newf("expected string or subquery, got %T", f))
@@ -38,7 +38,7 @@ func handleNull(s *string) (interface{}, error) {
 	return null.Encoding(*s), nil
 }
 
-func (c *compiler) nullOrSub(f ast.Node, ifnil null.Encoding) {
+func (c *compiler) nullOrSub(f ast.NullOrSQL, ifnil null.Encoding) {
 	switch f := f.(type) {
 	default:
 		panic(errint.Newf("expected string or subquery, got %T", f))
@@ -51,7 +51,7 @@ func (c *compiler) nullOrSub(f ast.Node, ifnil null.Encoding) {
 	}
 }
 
-func (c *compiler) intOrSub(f ast.Node, ifnil int) {
+func (c *compiler) intOrSub(f ast.IntOrSQL, ifnil int) {
 	switch f := f.(type) {
 	default:
 		panic(errint.Newf("expected string or subquery, got %T", f))
@@ -74,7 +74,7 @@ func (c *compiler) intOrSub(f ast.Node, ifnil int) {
 	}
 }
 
-func (c *compiler) runeOrSub(f ast.Node, ifnil rune) {
+func (c *compiler) runeOrSub(f ast.RuneOrSQL, ifnil rune) {
 	switch f := f.(type) {
 	default:
 		panic(errint.Newf("expected string or subquery, got %T", f))
@@ -97,7 +97,7 @@ func (c *compiler) runeOrSub(f ast.Node, ifnil rune) {
 	}
 }
 
-func (c *compiler) boolOrSub(f ast.Node, ifnil bool) {
+func (c *compiler) boolOrSub(f ast.BoolOrSQL, ifnil bool) {
 	switch f := f.(type) {
 	default:
 		panic(errint.Newf("expected string or subquery, got %T", f))

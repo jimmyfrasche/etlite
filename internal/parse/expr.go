@@ -153,7 +153,7 @@ func (p *parser) null(t token.Value) (ast.NullOrSQL, token.Value) {
 func (p *parser) header(t token.Value) (ast.BoolOrSQL, token.Value) {
 	if t.Literal("HEADER") {
 		t = p.next()
-		var n ast.BoolOrSQL
+		var n *ast.SQL
 		if n, t = p.maybeSq(t); n != nil {
 			return n, t
 		}
