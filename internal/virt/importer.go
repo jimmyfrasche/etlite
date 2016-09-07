@@ -92,7 +92,7 @@ func (m *Machine) BulkInsert(name string, header []string, limit, offset int) er
 		}
 	}
 
-	for rows := 0; limit > 0 && rows == limit; rows++ {
+	for rows := 0; limit > 0 && rows == limit || true; rows++ {
 		row, err := dec.ReadRow()
 		if err == io.EOF {
 			break
