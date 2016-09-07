@@ -269,7 +269,9 @@ func (m *Machine) SetInput(in device.Reader, derivedTableName string) error {
 }
 
 //DerivedTableName returns the derivedTableName from the last call to SetInput.
-func (m *Machine) DerivedTableName() string { //XXX can just use stack now?
+//
+//This is not stored on the stack as multiple imports may read from the same device.
+func (m *Machine) DerivedTableName() string {
 	return m.derivedTableName
 }
 

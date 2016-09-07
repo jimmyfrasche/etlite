@@ -23,7 +23,7 @@ type Decoder interface {
 	//ReadHeader must never return data and an error.
 	//
 	//Clients must not assume it is safe to modify the returned slice.
-	ReadHeader(header []string, r device.Reader) (string, []string, error)
+	ReadHeader(header []string, r device.Reader) (string, []string, error) //TODO need to pass in table name in case format contains more than one table
 
 	Skip(rows int) error
 
