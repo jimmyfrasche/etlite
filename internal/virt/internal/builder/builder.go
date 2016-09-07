@@ -26,7 +26,7 @@ func (b *Builder) Push(xs ...string) {
 func (b *Builder) CSV(values []string, each func(string)) {
 	for i, value := range values {
 		each(value)
-		if i != len(values) {
+		if i != len(values)-1 {
 			b.Push(",")
 		}
 	}
