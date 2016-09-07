@@ -12,17 +12,17 @@ var (
 )
 
 type dimError struct {
-	expected, got int
 	ctx           string
+	expected, got int
 }
 
 //NewDimErr creates a new dimension error when the input, described by ctx,
 //expected n column but got m.
 func NewDimErr(ctx string, expected, got int) error {
 	return &dimError{
+		ctx:      ctx,
 		expected: expected,
 		got:      got,
-		ctx:      ctx,
 	}
 }
 
