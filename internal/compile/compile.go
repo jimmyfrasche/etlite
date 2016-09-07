@@ -3,6 +3,8 @@
 package compile
 
 import (
+	"runtime"
+
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
@@ -33,7 +35,11 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 	defer func() {
 		if x := recover(); x != nil {
 			e, ok := x.(error)
-			if !ok {
+			if ok {
+				if _, ok := e.(runtime.Error); ok {
+					panic(x)
+				}
+			} else {
 				panic(x)
 			}
 			err = e
