@@ -25,6 +25,8 @@ type Decoder struct {
 
 	nm  string
 	lno int
+
+	resumed bool
 }
 
 func (d *Decoder) ctx() string {
@@ -33,34 +35,43 @@ func (d *Decoder) ctx() string {
 
 var _ format.Decoder = (*Decoder)(nil)
 
-//ReadHeader configures the decoder and returns the first row of the CSV.
-func (d *Decoder) ReadHeader(possibleHeader []string, in device.Reader) (string, []string, error) {
-	if len(possibleHeader) == 0 && d.NoHeader {
-		return "", nil, format.ErrNoHeader
-	}
+func (*Decoder) Name() string {
+	return "CSV"
+}
+
+func (d *Decoder) Init(in device.Reader) error {
 	d.nm = in.Name()
-	d.lno = 1
 	d.csv = csv.NewReader(in.Unwrap())
 	d.csv.Comma = d.Comma
 	d.csv.Comment = d.Comment
 	d.csv.TrimLeadingSpace = d.TrimLeadingSpace
+	d.lno = 1
+	d.resumed = false
+	return nil
+}
+
+//ReadHeader configures the decoder and returns the first row of the CSV.
+func (d *Decoder) ReadHeader(_ string, possibleHeader []string) ([]string, error) {
+	if !d.resumed && len(possibleHeader) == 0 && d.NoHeader {
+		return nil, format.ErrNoHeader
+	}
 	d.hdr = possibleHeader
-	if d.NoHeader {
+	if d.NoHeader || d.resumed {
 		if cap(d.acc) < len(d.hdr) {
 			d.acc = make([]*string, 0, len(d.hdr))
 		}
-		return "", d.hdr, nil
+		return d.hdr, nil
 	}
 
 	hdr, err := d.csv.Read()
 	if err != nil {
 		if err == io.EOF {
-			return "", nil, format.ErrNoHeader
+			return nil, format.ErrNoHeader
 		}
-		return "", nil, wrap(d, err)
+		return nil, wrap(d, err)
 	}
 	if d.Strict && len(d.hdr) != len(hdr) && len(d.hdr) != 0 {
-		return "", nil, format.NewDimErr(d.ctx(), len(d.hdr), len(hdr))
+		return nil, format.NewDimErr(d.ctx(), len(d.hdr), len(hdr))
 	}
 	if len(d.hdr) == 0 {
 		d.hdr = hdr
@@ -70,7 +81,7 @@ func (d *Decoder) ReadHeader(possibleHeader []string, in device.Reader) (string,
 		d.acc = make([]*string, 0, len(d.hdr))
 	}
 	d.lno++
-	return "", d.hdr, nil
+	return d.hdr, nil
 }
 
 //Skip rows.
@@ -114,7 +125,7 @@ func (d *Decoder) ReadRow() ([]*string, error) {
 
 //Reset decouples the CSV reader and zeroes internal scratch space.
 func (d *Decoder) Reset() error {
-	d.csv = nil
+	d.resumed = true
 	for i := range d.acc {
 		d.acc[i] = nil
 	}
@@ -123,6 +134,7 @@ func (d *Decoder) Reset() error {
 }
 
 //Close is a no-op.
-func (*Decoder) Close() error {
+func (d *Decoder) Close() error {
+	d.csv = nil
 	return nil
 }

@@ -12,6 +12,7 @@ type Display struct {
 	token.Position
 	Format Format
 	Device Device
+	Frame  string
 }
 
 var _ Node = (*Display)(nil)

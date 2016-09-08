@@ -13,7 +13,7 @@ import (
 
 //Decoder decodes the raw format
 type Decoder struct {
-	Tab     rune //If undefined, defaults to \t
+	Tab     rune
 	UseCRLF bool //True to use \r\n as the line terminator, otherwise \n.
 	Null    null.Encoding
 
@@ -29,22 +29,35 @@ type Decoder struct {
 	sacc []rune
 	facc []string
 	racc []*string
+
+	resumed bool
 }
 
 func (d *Decoder) ctx() string {
 	return fmt.Sprintf("%s:%d:", d.nm, d.lno)
 }
 
+func (*Decoder) Name() string {
+	return "RAW"
+}
+
 var _ format.Decoder = (*Decoder)(nil)
 
-//ReadHeader decodes the header
-func (d *Decoder) ReadHeader(potentialHeader []string, r device.Reader) (string, []string, error) {
-	if len(potentialHeader) == 0 && d.NoHeader {
-		return "", nil, format.ErrNoHeader
-	}
-
+func (d *Decoder) Init(r device.Reader) error {
 	d.nm = r.Name()
 	d.r = r.Unwrap()
+	d.resumed = false
+	d.lno = 1
+	return nil
+}
+
+//ReadHeader decodes the header
+func (d *Decoder) ReadHeader(_ string, potentialHeader []string) ([]string, error) {
+	if !d.resumed && len(potentialHeader) == 0 && d.NoHeader {
+		return nil, format.ErrNoHeader
+	}
+
+	//reset/cfg internal buffers
 	d.hdr = potentialHeader
 	sz := len(potentialHeader)
 	if cap(d.facc) < sz {
@@ -59,16 +72,16 @@ func (d *Decoder) ReadHeader(potentialHeader []string, r device.Reader) (string,
 	d.sacc = d.sacc[:0]
 	d.facc = d.facc[:0]
 	d.racc = d.racc[:0]
-	d.lno = 1
-	if d.NoHeader {
-		return "", d.hdr, nil
+	if d.resumed || d.NoHeader {
+		return d.hdr, nil
 	}
+
 	rs, err := d.read()
 	if err != nil {
-		return "", nil, errsys.WrapWith(d.ctx(), err)
+		return nil, errsys.WrapWith(d.ctx(), err)
 	}
 	if d.Strict && len(rs) != len(d.hdr) && len(d.hdr) != 0 {
-		return "", nil, format.NewDimErr(d.ctx(), len(d.hdr), len(rs))
+		return nil, format.NewDimErr(d.ctx(), len(d.hdr), len(rs))
 	}
 	if len(d.hdr) == 0 {
 		d.hdr = rs
@@ -76,7 +89,7 @@ func (d *Decoder) ReadHeader(potentialHeader []string, r device.Reader) (string,
 	if cap(d.racc) < len(d.hdr) {
 		d.racc = make([]*string, 0, len(d.hdr))
 	}
-	return "", rs, nil
+	return rs, nil
 }
 
 //Skip rows.
@@ -118,7 +131,6 @@ func (d *Decoder) ReadRow() ([]*string, error) {
 
 //Reset the decoder for reuse
 func (d *Decoder) Reset() error {
-	d.r = nil
 	d.hdr = nil
 	d.sacc = d.sacc[:0]
 	d.facc = d.facc[:0]
@@ -126,11 +138,13 @@ func (d *Decoder) Reset() error {
 		d.racc[i] = nil
 	}
 	d.racc = d.racc[:0]
+	d.resumed = true
 	return nil
 }
 
 //Close the decoder
-func (*Decoder) Close() error {
+func (d *Decoder) Close() error {
+	d.r = nil
 	return nil
 }
 

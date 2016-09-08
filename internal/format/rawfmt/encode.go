@@ -21,6 +21,8 @@ type Encoder struct {
 	w        device.Writer
 	tab, eol string
 	lno      int
+
+	resumed bool
 }
 
 var _ format.Encoder = (*Encoder)(nil)
@@ -37,8 +39,11 @@ func (e *Encoder) write(s string) error {
 	return nil
 }
 
-//WriteHeader encodes the header.
-func (e *Encoder) WriteHeader(hdr []string, w device.Writer) error {
+func (*Encoder) Name() string {
+	return "RAW"
+}
+
+func (e *Encoder) Init(w device.Writer) error {
 	e.w = w
 	e.eol = "\n"
 	if e.UseCRLF {
@@ -48,11 +53,24 @@ func (e *Encoder) WriteHeader(hdr []string, w device.Writer) error {
 		e.Tab = '\t'
 	}
 	e.tab = string([]rune{e.Tab})
-	e.lno = 1
+	e.resumed = false
+	return nil
+}
 
+//WriteHeader encodes the header.
+func (e *Encoder) WriteHeader(_ string, hdr []string) error {
+	e.lno = 1
 	if e.NoHeader {
 		return nil
 	}
+
+	if e.resumed {
+		if err := e.write(e.eol); err != nil {
+			return err
+		}
+		e.lno++
+	}
+
 	line := strings.Join(hdr, e.tab)
 	if err := e.write(line); err != nil {
 		return err
@@ -79,11 +97,12 @@ func (e *Encoder) WriteRow(row []*string) error {
 
 //Reset the encoder for reuse.
 func (e *Encoder) Reset() error {
-	e.w = nil
-	return nil
+	e.resumed = true
+	return e.w.Flush()
 }
 
 //Close the encoder.
-func (*Encoder) Close() error {
+func (e *Encoder) Close() error {
+	e.w = nil
 	return nil
 }

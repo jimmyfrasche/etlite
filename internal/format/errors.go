@@ -9,6 +9,10 @@ var (
 	//ErrNoHeader means that the names of columns need
 	//to be specified by the input but were not.
 	ErrNoHeader = errors.New("column names cannot be derived")
+
+	//ErrFrameRequired means the format requires a table
+	//name to choose the appropriate data table to decode.
+	ErrFrameRequired = errors.New("frame name is required")
 )
 
 type dimError struct {

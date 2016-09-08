@@ -15,6 +15,7 @@ type Import struct {
 	Header    []string
 	Device    Device
 	Table     string
+	Frame     string
 	Limit     IntOrSQL
 	Offset    IntOrSQL
 }

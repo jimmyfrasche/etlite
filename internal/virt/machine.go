@@ -46,6 +46,8 @@ type Machine struct {
 	encoder format.Encoder
 	decoder format.Decoder
 
+	eframe, dframe string
+
 	sys                        *sysdb.Sysdb
 	savepointStmt, releaseStmt *driver.Stmt
 
@@ -85,6 +87,7 @@ func New(savepoints []string, s Spec) (*Machine, error) {
 			NoHeader: true,
 		}
 	}
+	//TODO initial Init of decoder/encoder
 	m := &Machine{
 		name:    db,
 		conn:    c,
@@ -94,6 +97,14 @@ func New(savepoints []string, s Spec) (*Machine, error) {
 		decoder: dec,
 		stack:   make([]interface{}, 0, 128),
 	}
+	//Init default dec/enc
+	if err := m.decoder.Init(m.input); err != nil {
+		return nil, err
+	}
+	if err := m.encoder.Init(m.output); err != nil {
+		return nil, err
+	}
+
 	if s.Environ == nil {
 		s.Environ = os.Environ()
 	}
@@ -245,12 +256,20 @@ func (m *Machine) SetOutput(o device.Writer) error {
 	if m.output == nil {
 		return errint.New("no previous output device")
 	}
-	if err := m.output.Close(); err != nil {
+	if m.encoder == nil {
+		return errint.New("no previous decoder")
+	}
+
+	if err := m.encoder.Close(); err != nil {
 		return err
 	}
 
+	if err := m.output.Close(); err != nil {
+		return err
+	}
 	m.output = o
-	return nil
+
+	return m.encoder.Init(m.output)
 }
 
 func (m *Machine) SetInput(in device.Reader, derivedTableName string) error {
@@ -260,12 +279,20 @@ func (m *Machine) SetInput(in device.Reader, derivedTableName string) error {
 	if m.input == nil {
 		return errint.New("no previous input device")
 	}
-	if err := m.input.Close(); err != nil {
+	if m.decoder == nil {
+		return errint.New("no previous decoder")
+	}
+
+	if err := m.decoder.Close(); err != nil {
 		return err
 	}
 
+	if err := m.input.Close(); err != nil {
+		return err
+	}
 	m.input, m.derivedTableName = in, derivedTableName
-	return nil
+
+	return m.decoder.Init(m.input)
 }
 
 //DerivedTableName returns the derivedTableName from the last call to SetInput.
@@ -282,11 +309,16 @@ func (m *Machine) SetDecoder(d format.Decoder) error {
 	if m.decoder == nil {
 		return errint.New("no previous decoder")
 	}
+	if m.input == nil {
+		return errint.New("no previous input device")
+	}
+
 	if err := m.decoder.Close(); err != nil {
 		return err
 	}
 	m.decoder = d
-	return nil
+
+	return m.decoder.Init(m.input)
 }
 
 func (m *Machine) SetEncoder(e format.Encoder) error {
@@ -296,11 +328,28 @@ func (m *Machine) SetEncoder(e format.Encoder) error {
 	if m.encoder == nil {
 		return errint.New("no previous encoder")
 	}
+	if m.output == nil {
+		return errint.New("no previous output device")
+	}
+
 	if err := m.encoder.Close(); err != nil {
 		return err
 	}
 	m.encoder = e
-	return nil
+
+	return m.encoder.Init(m.output)
+}
+
+//SetEncodingFrame specifies the data frame (table) to encode,
+//if applicable to the current format.
+func (m *Machine) SetEncodingFrame(f string) {
+	m.eframe = f
+}
+
+//SetDecodingFrame specifies the data frame (table) to decode,
+//if applicable to the current format
+func (m *Machine) SetDecodingFrame(f string) {
+	m.dframe = f
 }
 
 //exec q.

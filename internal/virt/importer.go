@@ -10,19 +10,21 @@ import (
 //TODO create an enum of current states and track transitions within methods and instructions
 //so we can report an internal error if things are used out of sequence
 
-//InitDecoder reads the header from the current input device with the current decoder.
-func (m *Machine) InitDecoder(header []string) (string, []string, error) {
+//DecodeHeader reads the header from the current input device with the current decoder.
+func (m *Machine) DecodeHeader(table string, header []string) ([]string, error) {
 	// make sure we have a decoder and an input
+	if m.input == nil {
+		return nil, errint.New("no input when attempting to init decoder")
+	}
 	dec := m.decoder
 	if dec == nil {
-		return "", nil, errint.New("no decoder when attempting to init decoder")
+		return nil, errint.New("no decoder when attempting to init decoder")
 	}
-	in := m.input
-	if in == nil {
-		return "", nil, errint.New("no input when attempting to init decoder")
+	if m.dframe != "" {
+		table = m.dframe
 	}
 
-	return dec.ReadHeader(header, in)
+	return dec.ReadHeader(table, header)
 }
 
 //CreateTable initializes the decoder then creates table name with header.

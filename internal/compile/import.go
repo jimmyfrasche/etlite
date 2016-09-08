@@ -53,6 +53,7 @@ func (c *compiler) compileImportDeviceAndFormat(i *ast.Import) {
 	if i.Format != nil {
 		c.compileFormat(i.Format, inputFormat)
 	}
+	c.pushpush(i.Frame)
 }
 
 func (c *compiler) compileImportCommon(i *ast.Import, kind int) {
@@ -68,6 +69,12 @@ func (c *compiler) compileImportCommon(i *ast.Import, kind int) {
 	c.compileImportDeviceAndFormat(i)
 
 	c.push(func(m *virt.Machine) error {
+		frame, err := m.PopString()
+		if err != nil {
+			return err
+		}
+		m.SetDecodingFrame(frame)
+
 		offset, err := m.PopInt()
 		if err != nil {
 			return err
@@ -85,17 +92,15 @@ func (c *compiler) compileImportCommon(i *ast.Import, kind int) {
 			return err
 		}
 
-		//init decoder, reading the derived name and header, if applicable.
-		dname, dheader, err := m.InitDecoder(header)
-		if err != nil {
-			return err
-		}
 		//if noTable the stated name always win; if tempTable the computed name always wins.
 		if kind == normal && i.Table == "" {
-			i.Table = dname
-			if i.Table == "" {
-				i.Table = m.DerivedTableName()
-			}
+			i.Table = m.DerivedTableName()
+		}
+
+		//decode header from input
+		dheader, err := m.DecodeHeader(i.Table, header)
+		if err != nil {
+			return err
 		}
 		//if noTable the header is computed at runtime with a query; otherwise the declared header wins.
 		if kind != noTable && len(header) == 0 {

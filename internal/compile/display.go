@@ -3,6 +3,7 @@ package compile
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
 func (c *compiler) compileDisplay(d *ast.Display) {
@@ -12,4 +13,13 @@ func (c *compiler) compileDisplay(d *ast.Display) {
 
 	c.compileFormat(d.Format, outputFormat)
 	c.compileDevice(d.Device, outputDevice)
+	c.pushpush(d.Frame)
+	c.push(func(m *virt.Machine) error {
+		frame, err := m.PopString()
+		if err != nil {
+			return err
+		}
+		m.SetEncodingFrame(frame)
+		return nil
+	})
 }

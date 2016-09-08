@@ -22,6 +22,8 @@ type Encoder struct {
 
 	nm  string
 	lno int
+
+	resumed bool
 }
 
 var _ format.Encoder = (*Encoder)(nil)
@@ -30,24 +32,37 @@ func (e *Encoder) ctx() string {
 	return fmt.Sprintf("%s:%d:", e.nm, e.lno)
 }
 
-//WriteHeader writes the header as the first row of the CSV.
-func (e *Encoder) WriteHeader(hdr []string, w device.Writer) error {
+func (*Encoder) Name() string {
+	return "CSV"
+}
+
+func (e *Encoder) Init(w device.Writer) error {
 	e.nm = w.Name()
-	e.lno = 1
 	e.csv = csv.NewWriter(w.Unwrap())
 	if e.Comma == 0 {
 		e.Comma = ','
 	}
 	e.csv.Comma = e.Comma
 	e.csv.UseCRLF = e.UseCRLF
+	e.resumed = false
+	e.lno = 1
+	return nil
+}
+
+//WriteHeader writes the header as the first row of the CSV.
+func (e *Encoder) WriteHeader(_ string, hdr []string) error {
 	if e.acc == nil {
 		e.acc = make([]string, 0, len(hdr))
 	}
-	if e.NoHeader {
+	if e.NoHeader || e.resumed {
 		return nil
 	}
+
+	if err := e.csv.Write(hdr); err != nil {
+		return wrap(e, err)
+	}
 	e.lno++
-	return wrap(e, e.csv.Write(hdr))
+	return nil
 }
 
 //WriteRow writes a row to the CSV, handling all NULL encodings.
@@ -63,12 +78,12 @@ func (e *Encoder) WriteRow(row []*string) error {
 //Reset flushes and decouples the CSV writer.
 func (e *Encoder) Reset() error {
 	e.csv.Flush()
-	err := e.csv.Error()
-	e.csv = nil
-	return wrap(e, err)
+	e.resumed = true
+	return wrap(e, e.csv.Error())
 }
 
 //Close is a no-op.
-func (*Encoder) Close() error {
+func (e *Encoder) Close() error {
+	e.csv = nil
 	return nil
 }

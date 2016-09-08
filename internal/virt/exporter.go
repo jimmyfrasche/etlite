@@ -19,7 +19,7 @@ func MkQuery(q string) Instruction {
 
 		e, w := m.encoder, m.output
 
-		if err := e.WriteHeader(cols, w); err != nil {
+		if err := e.WriteHeader(m.eframe, cols); err != nil {
 			return err
 		}
 
