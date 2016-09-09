@@ -45,6 +45,7 @@ var sqLiterals = [...]string{
 
 var headLiterals = [...]string{
 	"USE",
+	"ASSERT",
 	"DISPLAY",
 	"IMPORT",
 	"SELECT",

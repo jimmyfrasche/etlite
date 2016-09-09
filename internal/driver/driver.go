@@ -105,13 +105,50 @@ func (c *conn) close() error {
 	return err
 }
 
+func (c *conn) assert(query string) (bool, error) {
+	if c == nil || c.db == nil {
+		return false, errint.New("no database connection when asserting")
+	}
+	if len(query) == 0 {
+		return false, errint.New("no query to assert on")
+	}
+
+	qln := C.int(len(query))
+	q := C.CString(query) //TODO replace with string cache
+	defer C.free(unsafe.Pointer(q))
+
+	var out C.int
+
+	ret := C.sqlbind_assert_query(c.db, q, qln, &out)
+	if ret != C.SQLITE_OK || out < 0 {
+		switch out {
+		default:
+			return false, errint.Newf("unexpected error code in assert: %d", out)
+		case C.sqlbind_err_sqlite:
+			return false, errmsg(c.db)
+		case C.sqlbind_err_num_cols:
+			return false, misuse("assert query must have exactly one column")
+		case C.sqlbind_err_no_result:
+			return false, misuse("assert query must have exactly one result, none returned")
+		case C.sqlbind_err_type:
+			return false, misuse("assert query must return a boolean")
+		case C.sqlbind_err_range:
+			return false, misuse("assert query must return a boolean, got arbitrary integer")
+		case C.sqlbind_err_too_many_results:
+			return false, misuse("assert query must have exactly one result, multiple returned")
+		}
+	}
+
+	return out != 1, nil
+}
+
 func (c *conn) prepare(query string) (*stmt, error) {
 	if c == nil || c.db == nil {
-		return nil, errors.New("no database connection")
+		return nil, errint.New("no database connection when preparing statement")
 	}
 	s := &stmt{c: c}
 
-	q := C.CString(query)
+	q := C.CString(query) //TODO replace with string cache
 	defer C.free(unsafe.Pointer(q))
 
 	// was using instead of -1: C.int(len(query)) + 1

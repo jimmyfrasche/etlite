@@ -199,6 +199,10 @@ func TestBind(t *testing.T) {
 	})
 }
 
+func TestAssert(t *testing.T) {
+	t.Error("TODO")
+}
+
 func TestSubquery(t *testing.T) {
 	t.Error("TODO")
 }

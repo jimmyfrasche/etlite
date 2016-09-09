@@ -7,6 +7,67 @@
 
 /* TODO really need to convert everything over to manual Pascal-style strings */
 
+int sqlbind_assert_query(sqlite3 *db, char *p, int plen, int *out) {
+	int rv = SQLITE_ERROR;
+	*out = sqlbind_err_sqlite;
+	if(db == NULL) {
+		return rv;
+	}
+
+	sqlite3_stmt *stmt;
+	rv = sqlite3_prepare_v2(db, p, plen, &stmt, NULL);
+	if(rv != SQLITE_OK) {
+		return rv;
+	}
+
+	if(sqlite3_column_count(stmt) != 1) {
+		*out = sqlbind_err_num_cols;
+		goto error;
+	}
+
+	rv = sqlite3_step(stmt);
+	if(rv == SQLITE_DONE) {
+		*out = sqlbind_err_no_result;
+		goto error;
+	}
+	if(rv != SQLITE_ROW) {
+		*out = sqlbind_err_sqlite;
+		sqlite3_finalize(stmt);
+		return rv;
+	}
+
+	int typ = sqlite3_column_type(stmt, 0);
+	if(typ != SQLITE_INTEGER) {
+		*out = sqlbind_err_type;
+		goto error;
+	}
+
+	int val = sqlite3_column_int(stmt, 0);
+	if(val < 0 || val > 1) {
+		*out = sqlbind_err_range;
+		goto error;
+	}
+
+	rv = sqlite3_step(stmt);
+	if(rv != SQLITE_DONE) {
+		*out = sqlbind_err_too_many_results;
+		goto error;
+	}
+
+	rv = sqlite3_finalize(stmt);
+	if(rv != SQLITE_OK) {
+		*out = sqlbind_err_sqlite;
+		return rv;
+	}
+
+	*out = val;
+	return SQLITE_OK;
+
+error:
+	sqlite3_finalize(stmt);
+	return SQLITE_ERROR;
+}
+
 /*
  * sqlbind_subquery is the backend of the simulation of a subquery.
  * It assumes none of its arguments are nil and returns the result

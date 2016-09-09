@@ -61,6 +61,9 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 			}
 			db = n.DB
 
+		case *ast.Assert:
+			c.compileAssert(n)
+
 		case *ast.Display:
 			c.compileDisplay(n)
 

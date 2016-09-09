@@ -9,6 +9,20 @@ var (
 	NotImplemented = errors.New("not implemented")
 )
 
+type ErrDriverMisuse struct {
+	msg string
+}
+
+func misuse(msg string) error {
+	return ErrDriverMisuse{
+		msg: msg,
+	}
+}
+
+func (e ErrDriverMisuse) Error() string {
+	return e.msg
+}
+
 //Init the sqlite engine and its extensions.
 func Init() error {
 	return startup()
@@ -32,6 +46,11 @@ func Open(name string) (*Conn, error) {
 //Close the db connection.
 func (c *Conn) Close() error {
 	return c.close()
+}
+
+//Assert a subquery, ensuring it returns a bool.
+func (c *Conn) Assert(query string) (bool, error) {
+	return c.assert(query)
 }
 
 //Prepare a query.

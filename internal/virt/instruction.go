@@ -1,6 +1,8 @@
 package virt
 
 import (
+	"fmt"
+
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
@@ -16,6 +18,32 @@ func (m *Machine) Run(is []Instruction) error {
 		}
 	}
 	return nil
+}
+
+type assertionError struct {
+	pos token.Position
+	msg string
+}
+
+func (a assertionError) Error() string {
+	return fmt.Sprintf("%s: assertion error: %s", a.pos, a.msg)
+}
+
+//MkAssert returns an assertion.
+func MkAssert(pos token.Position, msg, query string) Instruction {
+	return func(m *Machine) error {
+		ret, err := m.conn.Assert(query)
+		if err != nil {
+			return err
+		}
+		if !ret {
+			return assertionError{
+				pos: pos,
+				msg: msg,
+			}
+		}
+		return nil
+	}
 }
 
 //MkPush returns an instruction that pushes what onto the stack when executed.

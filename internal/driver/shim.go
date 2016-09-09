@@ -22,6 +22,10 @@ func (c *conn) close() error {
 	return nil
 }
 
+func (c *conn) assert(string) (bool, error) {
+	return false, NotImplemented
+}
+
 func (c *conn) prepare(string) (*stmt, error) {
 	return nil, NotImplemented
 }

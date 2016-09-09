@@ -14,6 +14,8 @@ func (p *parser) parseETL(t token.Value) ast.Node {
 	switch t.Canon {
 	case "USE":
 		return p.useStmt(t)
+	case "ASSERT":
+		return p.assertStmt(t)
 	case "DISPLAY":
 		return p.displayStmt(t)
 	case "IMPORT":
@@ -23,7 +25,7 @@ func (p *parser) parseETL(t token.Value) ast.Node {
 	}
 }
 
-//USE [DATABASE] "name"
+//USE [DB|DATABASE] "name"
 func (p *parser) useStmt(t token.Value) *ast.Use {
 	u := &ast.Use{
 		Position: t.Position,
@@ -43,6 +45,43 @@ func (p *parser) useStmt(t token.Value) *ast.Use {
 	p.expect(token.Semicolon)
 
 	return u
+}
+
+//ASSERT "message", subquery
+func (p *parser) assertStmt(t token.Value) *ast.Assert {
+	a := &ast.Assert{
+		Position: t.Position,
+	}
+
+	t = p.expect(token.String)
+	a.Message = t
+
+	t = p.expect(token.Literal)
+	if !t.Comma() {
+		panic(p.expected("comma", t))
+	}
+
+	t = p.next()
+	switch t.Kind {
+	default:
+		panic(p.expected("@ or subquery", t))
+	case token.LParen:
+		a.Subquery = p.parseSQL(t, true, false)
+		//trim off ()
+		a.Subquery.Tokens = a.Subquery.Tokens[1 : len(a.Subquery.Tokens)-1]
+	case token.Argument:
+		ts, err := interpolate.DesugarAssert(t)
+		if err != nil {
+			panic(p.mkErr(t, err))
+		}
+		a.Subquery = &ast.SQL{
+			Tokens: ts,
+		}
+	}
+
+	p.expect(token.Semicolon)
+
+	return a
 }
 
 //DISPLAY [format] [device]
