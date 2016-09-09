@@ -87,7 +87,6 @@ func New(savepoints []string, s Spec) (*Machine, error) {
 			NoHeader: true,
 		}
 	}
-	//TODO initial Init of decoder/encoder
 	m := &Machine{
 		name:    db,
 		conn:    c,
