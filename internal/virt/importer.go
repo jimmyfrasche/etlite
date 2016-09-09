@@ -56,6 +56,8 @@ func (m *Machine) CreateTable(temp bool, name string, header []string) error {
 //Table name must exist and should have been created by
 //either CreateTableFrom or CreateTable, with no intervening
 //reads to or changes of the decoder.
+//
+//Before that DecodeHeader must be called.
 func (m *Machine) BulkInsert(name string, header []string, limit, offset int) error {
 	//make sure we have a decoder
 	dec := m.decoder
@@ -108,5 +110,9 @@ func (m *Machine) BulkInsert(name string, header []string, limit, offset int) er
 		}
 	}
 
-	return bulk.Close()
+	if err := bulk.Close(); err != nil {
+		return err
+	}
+
+	return dec.Reset()
 }
