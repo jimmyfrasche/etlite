@@ -14,9 +14,9 @@ const (
 	name TEXT PRIMARY KEY ON CONFLICT REPLACE,
 	value TEXT NOT NULL
 ) WITHOUT ROWID`
-	createArg  = `CREATE TABLE sys.arg (value TEXT NOT NULL)`
+	createArg  = `CREATE TABLE sys.args (value TEXT NOT NULL)`
 	insEnv     = `INSERT INTO sys.env VALUES (?, ?)`
-	insArg     = `INSERT INTO sys.arg VALUES (?)`
+	insArg     = `INSERT INTO sys.args VALUES (?)`
 	readAllEnv = `SELECT name || '=' || value FROM sys.env`
 )
 
