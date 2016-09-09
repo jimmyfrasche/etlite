@@ -53,6 +53,19 @@ func (f *Reader) Unwrap() *bufio.Reader {
 	return f.Reader
 }
 
+//File returns the underlying os.File,
+//and a reset function that must be called to reset the file device
+//after any and all low-level access is completed.
+//
+//It is the callers responsibility to make sure the file is at the
+//logical "end" where reading may continue and then calling reset.
+func (f *Reader) File() (fh *os.File, reset func(), err error) {
+	reset = func() {
+		f.Reader.Reset(f.f)
+	}
+	return f.f, reset, nil
+}
+
 //Close f.
 func (f *Reader) Close() error {
 	err := errsys.Wrap(f.f.Close())
@@ -95,6 +108,22 @@ func (f *Writer) Name() string {
 //Unwrap returns the underlying bufio.Writer.
 func (f *Writer) Unwrap() *bufio.Writer {
 	return f.Writer
+}
+
+//File flushes the buffer, returns the underlying os.File,
+//and a reset function that must be called to reset the file device
+//after any and all low-level access is completed.
+//
+//It is the callers responsibility to make sure the file is at the
+//logical "end" where writing may continue and then calling reset.
+func (f *Writer) File() (fh *os.File, reset func(), err error) {
+	if err := f.Writer.Flush(); err != nil {
+		return nil, nil, err
+	}
+	reset = func() {
+		f.Writer.Reset(f.f)
+	}
+	return f.f, reset, nil
 }
 
 //Close flushes, syncs, and renames the tmp file to Name().
