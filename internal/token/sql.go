@@ -11,7 +11,7 @@ func (v Value) Op() bool {
 		return false
 	}
 	s := v.Value[0]
-	for _, r := range "!@%&|-+=/<>*" {
+	for _, r := range "!@%&|-+=/<>*." {
 		if byte(r) == s {
 			return true
 		}
