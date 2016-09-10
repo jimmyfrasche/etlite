@@ -8,9 +8,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/device/file"
 	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
-	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
-	"github.com/jimmyfrasche/etlite/internal/token"
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
@@ -36,27 +34,23 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 		}
 
 	case *ast.DeviceFile: //always pushes filename
-		c.mandatoryStrOrSub(d.Name, "file name") //pushes filename
+		name, ok := d.Name.Unescape()
+		if !ok {
+			panic(errint.Newf("file device name must be literal or string got %s", d.Name.Kind))
+		}
 		if read {
+			tbl := tblnameFromFilename(name)
 			c.push(func(m *virt.Machine) error {
-				name, err := getFilename(m, d.Pos())
-				if err != nil {
-					return err
-				}
 				f, err := file.NewReader(name)
 				if err != nil {
 					return err
 				}
 				//table name has to go in a register instead of on the stack
 				//due to the evaluation order
-				return m.SetInput(f, tblnameFromFilename(name))
+				return m.SetInput(f, tbl)
 			})
 		} else {
 			c.push(func(m *virt.Machine) error {
-				name, err := getFilename(m, d.Pos())
-				if err != nil {
-					return err
-				}
 				f, err := file.NewWriter(name)
 				if err != nil {
 					return err
@@ -81,17 +75,6 @@ func tblnameFromFilename(f string) string {
 		base = base[:idx]
 	}
 	return escape.String(base)
-}
-
-func getFilename(m *virt.Machine, p token.Position) (string, error) {
-	s, err := m.PopString()
-	if err != nil {
-		return "", err
-	}
-	if s == "" {
-		return "", errusr.New(p, "no file name provided by subquery")
-	}
-	return s, nil
 }
 
 func setStdin(m *virt.Machine) error {

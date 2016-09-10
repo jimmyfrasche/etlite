@@ -4,6 +4,8 @@ import (
 	"io"
 
 	"github.com/jimmyfrasche/etlite/internal/ast/internal/writer"
+	"github.com/jimmyfrasche/etlite/internal/internal/escape"
+	"github.com/jimmyfrasche/etlite/internal/internal/null"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
@@ -41,12 +43,12 @@ func (l LineEnding) String() string {
 //FormatCSV represents: csv [delim] [quote] [line] [null] [header]
 type FormatCSV struct {
 	token.Position
-	Strict bool
-	Delim  RuneOrSQL
-	Quote  RuneOrSQL
-	Line   LineEnding
-	Null   NullOrSQL
-	Header BoolOrSQL
+	Strict   bool
+	Delim    rune
+	Quote    rune
+	Line     LineEnding
+	Null     null.Encoding
+	NoHeader bool
 }
 
 var _ Format = (*FormatCSV)(nil)
@@ -63,26 +65,22 @@ func (f *FormatCSV) Print(to io.Writer) error {
 	w := writer.New(to)
 	w.Str("CSV")
 
-	if f.Delim != nil {
-		w.Str(" DELIMITER ")
-		runeOrSQL(f.Delim, w)
+	if f.Delim > 0 {
+		w.Str(" DELIMITER ").Rune(f.Delim)
 	}
 
-	if f.Quote != nil {
-		w.Str(" QUOTE ")
-		runeOrSQL(f.Quote, w)
+	if f.Quote > 0 {
+		w.Str(" QUOTE ").Rune(f.Quote)
 	}
 
-	if f.Null != nil {
-		w.Str(" NULL ")
-		nullOrSQL(f.Null, w)
+	if f.Null != "" {
+		w.Str(" NULL ").Str(escape.String(string(f.Null)))
 	}
 
 	w.Sp().Stringer(f.Line).Sp()
 
-	if f.Header != nil {
-		w.Str("HEADER ")
-		boolOrSQL(f.Header, w)
+	if f.NoHeader {
+		w.Str("NOHEADER ")
 	}
 
 	return w.Err()
@@ -92,10 +90,10 @@ func (f *FormatCSV) Print(to io.Writer) error {
 type FormatRaw struct {
 	token.Position
 	Strict bool
-	Delim  RuneOrSQL
+	Delim  rune
 	Line   LineEnding
-	Null   NullOrSQL
-	Header BoolOrSQL
+	Null   null.Encoding
+	Header bool
 }
 
 var _ Format = (*FormatRaw)(nil)
@@ -112,21 +110,18 @@ func (f *FormatRaw) Print(to io.Writer) error {
 	w := writer.New(to)
 	w.Str("RAW ")
 
-	if f.Delim != nil {
-		w.Str(" DELIMITER ")
-		runeOrSQL(f.Delim, w)
+	if f.Delim > 0 {
+		w.Str(" DELIMITER ").Rune(f.Delim)
 	}
 
-	if f.Null != nil {
-		w.Str(" NULL ")
-		nullOrSQL(f.Null, w)
+	if f.Null != "" {
+		w.Str(" NULL ").Str(escape.String(string(f.Null)))
 	}
 
 	w.Sp().Stringer(f.Line).Sp()
 
-	if f.Header != nil {
+	if f.Header {
 		w.Str("HEADER ")
-		boolOrSQL(f.Header, w)
 	}
 
 	return w.Err()

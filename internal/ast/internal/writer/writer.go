@@ -4,6 +4,7 @@ package writer
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"unicode/utf8"
 )
 
@@ -99,6 +100,10 @@ func (w *Writer) Stringer(f fmt.Stringer) *Writer {
 	return w
 }
 
+func (w *Writer) Int(i int) *Writer {
+	return w.Str(strconv.Itoa(i))
+}
+
 type runeWriter interface {
 	WriteRune(rune) (int, error)
 }
@@ -108,6 +113,13 @@ func (w *Writer) Rune(r rune) *Writer {
 	if w.err != nil {
 		return w
 	}
+	switch r {
+	case '\t':
+		return w.Str("TAB")
+	case '\'':
+		return w.Str(`"'"`)
+	}
+	w.Str(`"`)
 	if rw, ok := w.stringWriter.(runeWriter); ok {
 		_, w.err = rw.WriteRune(r)
 	} else {
@@ -115,6 +127,7 @@ func (w *Writer) Rune(r rune) *Writer {
 		nb := utf8.EncodeRune(buf[:], r)
 		_, w.err = w.Write(buf[:nb])
 	}
+	w.Str(`"`)
 	return w
 }
 

@@ -18,8 +18,7 @@ type Device interface {
 
 //DeviceFile represents a named file.
 type DeviceFile struct {
-	token.Position //TO or FROM
-	Name           StringOrSQL
+	Name token.Value
 }
 
 var _ Device = &DeviceFile{}
@@ -28,13 +27,13 @@ func (*DeviceFile) dev() {}
 
 //Pos reports the original position in input.
 func (d *DeviceFile) Pos() token.Position {
-	return d.Position
+	return d.Name.Position
 }
 
 //Print stringifies to a writer.
 func (d *DeviceFile) Print(to io.Writer) error {
 	w := writer.New(to)
-	stringOrSQL(d.Name, w)
+	w.Str(d.Name.Value)
 	return w.Err()
 }
 

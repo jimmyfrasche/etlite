@@ -2,10 +2,10 @@ package parse
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
+	"github.com/jimmyfrasche/etlite/internal/internal/runefrom"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
@@ -27,24 +27,14 @@ func (p *parser) deviceExpr(toFrom token.Value) (ast.Device, token.Value) {
 		}
 	}
 
-	//here t cannot be STDIN or STDOUT, so it must be a filename or subquery
-	var n ast.StringOrSQL
-	if t.Kind == token.LParen {
-		n = p.parseSQL(p.next(), true, true)
-	} else {
-		s, ok := t.Unescape()
-		if !ok {
-			panic(p.unexpected(t))
-		}
-		n = &ast.String{
-			Position: t.Position,
-			Value:    s,
-		}
+	//here t cannot be STDIN or STDOUT, so it must be a filename
+	_, ok := t.Unescape()
+	if !ok {
+		panic(p.unexpected(t))
 	}
 
 	d := &ast.DeviceFile{
-		Position: toFrom.Position,
-		Name:     n,
+		Name: t,
 	}
 	return d, p.next()
 }
@@ -71,6 +61,7 @@ func (p *parser) formatJSON(t token.Value) (ast.Format, token.Value) {
 func (p *parser) formatRaw(t token.Value) (ast.Format, token.Value) {
 	f := &ast.FormatRaw{
 		Position: t.Position,
+		Delim:    -1,
 	}
 	t = p.next()
 	if t.Literal("STRICT") {
@@ -80,13 +71,18 @@ func (p *parser) formatRaw(t token.Value) (ast.Format, token.Value) {
 	f.Delim, t = p.delim(t)
 	f.Line, t = p.lineEnding(t)
 	f.Null, t = p.null(t)
-	f.Header, t = p.header(t)
+	if t.Literal("HEADER") || t.Literal("HDR") {
+		f.Header = true
+		t = p.next()
+	}
 	return f, t
 }
 
 func (p *parser) formatCSV(t token.Value) (ast.Format, token.Value) {
 	f := &ast.FormatCSV{
 		Position: t.Position,
+		Delim:    -1,
+		Quote:    -1,
 	}
 	t = p.next()
 	if t.Literal("STRICT") {
@@ -97,7 +93,10 @@ func (p *parser) formatCSV(t token.Value) (ast.Format, token.Value) {
 	f.Quote, t = p.quote(t)
 	f.Line, t = p.lineEnding(t)
 	f.Null, t = p.null(t)
-	f.Header, t = p.header(t)
+	if t.Literal("NOHEADER") || t.Literal("NOHDR") {
+		f.NoHeader = true
+		t = p.next()
+	}
 	return f, t
 }
 
@@ -118,58 +117,54 @@ func (p *parser) lineEnding(t token.Value) (ast.LineEnding, token.Value) {
 	}
 }
 
-func (p *parser) delim(t token.Value) (ast.RuneOrSQL, token.Value) {
+func (p *parser) rune(t token.Value) (rune, token.Value) {
+	if t.Literal("TAB") {
+		return '\t', p.next()
+	}
+	s, ok := t.Unescape()
+	if !ok {
+		panic(p.unexpected(t))
+	}
+	r, err := runefrom.String(s)
+	if err != nil {
+		panic(p.mkErr(t, err))
+	}
+	return r, p.next()
+}
+
+func (p *parser) delim(t token.Value) (rune, token.Value) {
 	if t.Literal("DELIM") || t.Literal("DELIMITER") {
-		return p.runeOrSq(p.next(), "delimiter")
+		return p.rune(p.next())
 	}
-	return nil, t
+	return -1, t
 }
 
-func (p *parser) quote(t token.Value) (ast.RuneOrSQL, token.Value) {
+func (p *parser) int(t token.Value) int {
+	if t.Kind != token.Literal {
+		panic(p.unexpected(t))
+	}
+	i, err := strconv.Atoi(t.Value)
+	if err != nil {
+		panic(p.mkErr(t, err))
+	}
+	return i
+}
+
+func (p *parser) quote(t token.Value) (rune, token.Value) {
 	if t.Literal("QUOTE") {
-		return p.runeOrSq(p.next(), "quote")
+		return p.rune(p.next())
 	}
-	return nil, t
+	return -1, t
 }
 
-func (p *parser) null(t token.Value) (ast.NullOrSQL, token.Value) {
+func (p *parser) null(t token.Value) (null.Encoding, token.Value) {
 	if t.Literal("NULL") {
-		var n ast.NullOrSQL
-		if n, t = p.maybeSq(t); n != nil {
-			return n, t
-		}
+		t = p.next()
 		s, ok := t.Unescape()
 		if !ok {
 			panic(p.expected("null encoding", t))
 		}
-		return &ast.Null{
-			Position: t.Position,
-			Value:    null.Encoding(s),
-		}, p.next()
+		return null.Encoding(s), p.next()
 	}
-	return nil, t
-}
-
-func (p *parser) header(t token.Value) (ast.BoolOrSQL, token.Value) {
-	if t.Literal("HEADER") {
-		t = p.next()
-		var n *ast.SQL
-		if n, t = p.maybeSq(t); n != nil {
-			return n, t
-		}
-
-		s, ok := t.Unescape()
-		if !ok {
-			panic(p.expected("boolean", t))
-		}
-		b, err := strconv.ParseBool(strings.ToUpper(s))
-		if err != nil {
-			panic(p.expected("boolean", t))
-		}
-		return &ast.Bool{
-			Position: t.Position,
-			Value:    b,
-		}, p.next()
-	}
-	return nil, t
+	return "", t
 }

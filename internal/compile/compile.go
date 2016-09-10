@@ -21,10 +21,6 @@ func (c *compiler) push(is ...virt.Instruction) {
 	c.inst = append(c.inst, is...)
 }
 
-func (c *compiler) pushpush(v interface{}) {
-	c.push(virt.MkPush(v))
-}
-
 //Nodes collects and compiles the nodes on from into instructions for our VM.
 func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instruction, err error) {
 	c := &compiler{
@@ -71,7 +67,7 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 			c.compileImport(n)
 
 		case *ast.SQL:
-			c.compileSQL(n, nil)
+			c.compileSQL(n)
 		}
 
 		firstStatement = false

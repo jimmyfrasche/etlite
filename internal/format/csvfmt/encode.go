@@ -13,6 +13,7 @@ import (
 type Encoder struct {
 	Null    null.Encoding
 	Comma   rune
+	Quote   rune //unused
 	UseCRLF bool
 
 	NoHeader bool
@@ -39,7 +40,10 @@ func (*Encoder) Name() string {
 func (e *Encoder) Init(w device.Writer) error {
 	e.nm = w.Name()
 	e.csv = csv.NewWriter(w.Unwrap())
-	if e.Comma == 0 {
+	if e.Quote < 0 {
+		e.Quote = '"'
+	}
+	if e.Comma < 0 {
 		e.Comma = ','
 	}
 	e.csv.Comma = e.Comma

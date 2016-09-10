@@ -26,8 +26,7 @@ func (c *compiler) release() {
 	c.push(virt.MkRelease())
 }
 
-//handler is only non-nil for subqueries in imports
-func (c *compiler) compileSQL(s *ast.SQL, handler func(*string) (interface{}, error)) {
+func (c *compiler) compileSQL(s *ast.SQL) {
 	c.sqlDepth++
 	defer func() {
 		c.sqlDepth--
@@ -40,9 +39,6 @@ func (c *compiler) compileSQL(s *ast.SQL, handler func(*string) (interface{}, er
 		}
 		if len(s.Subqueries) != 1 {
 			panic(errint.Newf("found %d imports in CREATE TABLE FROM IMPORT but should only have 1", len(s.Subqueries)))
-		}
-		if handler != nil {
-			panic(errint.New("handler must be nil in CREATE TABLE FROM IMPORT"))
 		}
 
 		nm := tblFrom(s.Name)
@@ -65,9 +61,7 @@ func (c *compiler) compileSQL(s *ast.SQL, handler func(*string) (interface{}, er
 	//if etl subquery, handle set up
 	var tbls []string
 	if len(s.Subqueries) > 0 {
-		if handler == nil { //otherwise we're in a nested subquery
-			c.savepoint()
-		}
+		c.savepoint()
 
 		//compile the imports
 		tbls = make([]string, len(s.Subqueries))
@@ -82,7 +76,7 @@ func (c *compiler) compileSQL(s *ast.SQL, handler func(*string) (interface{}, er
 			if t.Kind == token.Placeholder {
 				s.Tokens[j] = token.Value{
 					Kind:  token.Literal,
-					Value: "select * from temp." + tbls[i],
+					Value: "select * from temp." + tbls[i], //TODO create synthetic tokens
 				}
 				i++
 			}
@@ -97,19 +91,13 @@ func (c *compiler) compileSQL(s *ast.SQL, handler func(*string) (interface{}, er
 	if err != nil {
 		panic(err)
 	}
-	if handler == nil {
-		c.push(virt.MkQuery(q))
-	} else {
-		c.push(virt.MkPushSubquery(q, handler))
-	}
+	c.push(virt.MkQuery(q))
 
 	//if this was an etl subquery, handle teardown
 	if len(s.Subqueries) > 0 {
 		for i := range s.Subqueries {
 			c.push(virt.MkDropTempTable(tbls[i]))
 		}
-		if handler == nil {
-			c.release()
-		}
+		c.release()
 	}
 }

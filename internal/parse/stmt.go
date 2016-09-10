@@ -104,6 +104,8 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 	i := &ast.Import{
 		Position: t.Position,
 		Header:   make([]string, 0, 16),
+		Limit:    -1,
+		Offset:   -1,
 	}
 	t = p.next()
 	if t.Literal("TEMP") || t.Literal("TEMPORARY") {
@@ -132,6 +134,16 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 		}
 	}
 
+	if t.Literal("FRAME") {
+		t = p.next()
+		s, ok := t.Unescape()
+		if !ok {
+			panic(p.unexpected(t))
+		}
+		i.Frame = s
+		t = p.next()
+	}
+
 	if t.Literal("FROM") {
 		i.Device, t = p.deviceExpr(t)
 	}
@@ -150,13 +162,13 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 	}
 
 	if t.Literal("LIMIT") {
+		i.Limit = p.int(p.next())
 		t = p.next()
-		i.Limit, t = p.intOrSq(t, true)
 	}
 
 	if t.Literal("OFFSET") {
+		i.Offset = p.int(p.next())
 		t = p.next()
-		i.Offset, t = p.intOrSq(t, false)
 	}
 
 	if t.Kind != end {

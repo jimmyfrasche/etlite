@@ -7,7 +7,6 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
-	"github.com/jimmyfrasche/etlite/internal/internal/null"
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
@@ -36,19 +35,17 @@ func (c *compiler) compileFormat(f ast.Format, read bool) {
 }
 
 func (c *compiler) formatCSV(f *ast.FormatCSV, read bool) {
-	c.runeOrSub(f.Delim, ',')
-	if f.Quote != nil { //XXX unsupported currently since encoding/csv doesn't do that
-		panic(errusr.New(f.Quote.Pos(), "specifying quotation for CSV is currently unsupported :("))
+	if f.Quote > 0 { //XXX unsupported currently since encoding/csv doesn't do that
+		panic(errusr.New(f.Pos(), "specifying quotation for CSV is currently unsupported :("))
 	}
-	c.runeOrSub(f.Quote, '"')
 	if f.Line != 0 && !read {
 		panic(errusr.New(f.Pos(), "specifying line ending when writing CSV is unsupported"))
 	}
-	c.nullOrSub(f.Null, null.Encoding(""))
-	c.boolOrSub(f.Header, true)
 
 	useCRLF := false
 	switch f.Line {
+	default:
+		panic(errint.Newf("format csv undefined line ending %d", f.Line))
 	case ast.DefaultLineEnding:
 		useCRLF = eol.Default
 	case ast.CRLF:
@@ -57,59 +54,36 @@ func (c *compiler) formatCSV(f *ast.FormatCSV, read bool) {
 		useCRLF = false
 	}
 
-	back := func(m *virt.Machine) (delim, quote rune, n null.Encoding, hdr bool, err error) {
-		hdr, err = m.PopBool()
-		if err != nil {
-			return
-		}
-		n, err = m.PopNullEncoding()
-		if err != nil {
-			return
-		}
-		quote, err = m.PopRune()
-		if err != nil {
-			return
-		}
-		delim, err = m.PopRune()
-		return
-	}
-
 	if read { //decoder
+		d := &csvfmt.Decoder{
+			Null:     f.Null,
+			Quote:    f.Quote,
+			Comma:    f.Delim,
+			NoHeader: f.NoHeader,
+			UseCRLF:  useCRLF,
+		}
 		c.push(func(m *virt.Machine) error {
-			d, _, n, hdr, err := back(m)
-			if err != nil {
-				return err
-			}
-			return m.SetDecoder(&csvfmt.Decoder{
-				Null:     n,
-				Comma:    d,
-				Strict:   f.Strict,
-				NoHeader: !hdr,
-			})
+			return m.SetDecoder(d)
 		})
 	} else { //encoder
+		e := &csvfmt.Encoder{
+			Null:     f.Null,
+			Quote:    f.Quote,
+			Comma:    f.Delim,
+			NoHeader: f.NoHeader,
+			UseCRLF:  useCRLF,
+		}
 		c.push(func(m *virt.Machine) error {
-			d, _, n, hdr, err := back(m)
-			if err != nil {
-				return err
-			}
-			return m.SetEncoder(&csvfmt.Encoder{
-				Null:     n,
-				Comma:    d,
-				UseCRLF:  useCRLF,
-				NoHeader: hdr,
-			})
+			return m.SetEncoder(e)
 		})
 	}
 }
 
 func (c *compiler) formatRaw(f *ast.FormatRaw, read bool) {
-	c.runeOrSub(f.Delim, '\t')
-	c.nullOrSub(f.Null, null.Encoding(""))
-	c.boolOrSub(f.Header, true)
-
 	useCRLF := false
 	switch f.Line {
+	default:
+		panic(errint.Newf("format raw undefined line ending %d", f.Line))
 	case ast.DefaultLineEnding:
 		useCRLF = eol.Default
 	case ast.CRLF:
@@ -118,45 +92,26 @@ func (c *compiler) formatRaw(f *ast.FormatRaw, read bool) {
 		useCRLF = false
 	}
 
-	back := func(m *virt.Machine) (delim rune, n null.Encoding, hdr bool, err error) {
-		hdr, err = m.PopBool()
-		if err != nil {
-			return
-		}
-		n, err = m.PopNullEncoding()
-		if err != nil {
-			return
-		}
-		delim, err = m.PopRune()
-		return
-	}
-
 	if read { //decoder
+		d := &rawfmt.Decoder{
+			Tab:      f.Delim,
+			UseCRLF:  useCRLF,
+			Null:     f.Null,
+			Strict:   f.Strict,
+			NoHeader: !f.Header,
+		}
 		c.push(func(m *virt.Machine) error {
-			d, n, hdr, err := back(m)
-			if err != nil {
-				return err
-			}
-			return m.SetDecoder(&rawfmt.Decoder{
-				Tab:      d,
-				UseCRLF:  useCRLF,
-				Null:     n,
-				Strict:   f.Strict,
-				NoHeader: hdr,
-			})
+			return m.SetDecoder(d)
 		})
 	} else { //encoder
+		e := &rawfmt.Encoder{
+			Tab:      f.Delim,
+			UseCRLF:  useCRLF,
+			Null:     f.Null,
+			NoHeader: !f.Header,
+		}
 		c.push(func(m *virt.Machine) error {
-			d, n, hdr, err := back(m)
-			if err != nil {
-				return err
-			}
-			return m.SetEncoder(&rawfmt.Encoder{
-				Tab:      d,
-				UseCRLF:  useCRLF,
-				Null:     n,
-				NoHeader: hdr,
-			})
+			return m.SetEncoder(e)
 		})
 	}
 }

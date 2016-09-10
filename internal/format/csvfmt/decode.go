@@ -14,7 +14,9 @@ import (
 type Decoder struct {
 	Null             null.Encoding
 	Comma, Comment   rune
+	Quote            rune //unused
 	TrimLeadingSpace bool //unused
+	UseCRLF          bool //unused
 
 	Strict   bool
 	NoHeader bool
@@ -42,6 +44,12 @@ func (*Decoder) Name() string {
 func (d *Decoder) Init(in device.Reader) error {
 	d.nm = in.Name()
 	d.csv = csv.NewReader(in.Unwrap())
+	if d.Quote < 0 {
+		d.Quote = '"'
+	}
+	if d.Comma < 0 {
+		d.Comma = ','
+	}
 	d.csv.Comma = d.Comma
 	d.csv.Comment = d.Comment
 	d.csv.TrimLeadingSpace = d.TrimLeadingSpace

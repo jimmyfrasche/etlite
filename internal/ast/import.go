@@ -16,8 +16,8 @@ type Import struct {
 	Device    Device
 	Table     string
 	Frame     string
-	Limit     IntOrSQL
-	Offset    IntOrSQL
+	Limit     int
+	Offset    int
 }
 
 var _ Node = (*Import)(nil)
@@ -69,15 +69,15 @@ func (i *Import) print(w *writer.Writer) {
 		w.Str(" AS ").Str(i.Table).Sp()
 	}
 
-	if i.Limit != nil {
-		w.Str("LIMIT ")
-		intOrSQL(i.Limit, w)
-		w.Sp()
+	if i.Frame != "" {
+		w.Str("FRAME ").Str(i.Frame).Sp()
 	}
 
-	if i.Offset != nil {
-		w.Str("OFFSET ")
-		intOrSQL(i.Offset, w)
-		w.Sp()
+	if i.Limit > 0 {
+		w.Str("LIMIT ").Int(i.Limit).Sp()
+	}
+
+	if i.Offset > 0 {
+		w.Str("OFFSET ").Int(i.Offset).Sp()
 	}
 }

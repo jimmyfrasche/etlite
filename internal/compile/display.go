@@ -13,13 +13,8 @@ func (c *compiler) compileDisplay(d *ast.Display) {
 
 	c.compileFormat(d.Format, outputFormat)
 	c.compileDevice(d.Device, outputDevice)
-	c.pushpush(d.Frame)
 	c.push(func(m *virt.Machine) error {
-		frame, err := m.PopString()
-		if err != nil {
-			return err
-		}
-		m.SetEncodingFrame(frame)
+		m.SetEncodingFrame(d.Frame)
 		return nil
 	})
 }
