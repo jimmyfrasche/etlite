@@ -2,9 +2,14 @@ package virt
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
 
+	"github.com/jimmyfrasche/etlite/internal/device/file"
+	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
@@ -65,6 +70,50 @@ func MkSetEncodingFrame(f string) Instruction {
 	return func(m *Machine) error {
 		m.eframe = f
 		return nil
+	}
+}
+
+func MkUseStdout() Instruction {
+	return func(m *Machine) error {
+		return m.setOutput(std.Out)
+	}
+}
+
+func MkUseStdin() Instruction {
+	return func(m *Machine) error {
+		return m.setInput(std.In, "[-]")
+	}
+}
+
+func MkUseFileOutput(fname string) Instruction {
+	return func(m *Machine) error {
+		f, err := file.NewWriter(fname)
+		if err != nil {
+			return err
+		}
+		return m.setOutput(f)
+	}
+}
+
+func MkUseFileInput(fname string) Instruction {
+	return func(m *Machine) error {
+		f, err := file.NewReader(fname)
+		if err != nil {
+			return err
+		}
+		base := filepath.Base(fname)
+		idx := strings.LastIndexByte(base, '.')
+		switch {
+		case idx < 0:
+			// filename
+		case idx == 0:
+			// .filename
+			base = base[1:]
+		case idx > 0:
+			// filename.ext
+			base = base[:idx]
+		}
+		return m.setInput(f, escape.String(base))
 	}
 }
 

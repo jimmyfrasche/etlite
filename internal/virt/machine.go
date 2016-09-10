@@ -248,7 +248,7 @@ func (m *Machine) PopRune() (rune, error) {
 	return r, nil
 }
 
-func (m *Machine) SetOutput(o device.Writer) error {
+func (m *Machine) setOutput(o device.Writer) error {
 	if o == nil {
 		return errint.New("no output device specified")
 	}
@@ -271,7 +271,7 @@ func (m *Machine) SetOutput(o device.Writer) error {
 	return m.encoder.Init(m.output)
 }
 
-func (m *Machine) SetInput(in device.Reader, derivedTableName string) error {
+func (m *Machine) setInput(in device.Reader, derivedTableName string) error {
 	if in == nil {
 		return errint.New("no input device specified")
 	}
