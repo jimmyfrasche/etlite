@@ -339,12 +339,6 @@ func (m *Machine) setEncoder(e format.Encoder) error {
 	return m.encoder.Init(m.output)
 }
 
-//SetEncodingFrame specifies the data frame (table) to encode,
-//if applicable to the current format.
-func (m *Machine) SetEncodingFrame(f string) {
-	m.eframe = f
-}
-
 //SetDecodingFrame specifies the data frame (table) to decode,
 //if applicable to the current format
 func (m *Machine) SetDecodingFrame(f string) {

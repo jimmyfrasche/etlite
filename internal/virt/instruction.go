@@ -59,6 +59,15 @@ func MkSetDecoder(d format.Decoder) Instruction {
 	}
 }
 
+//MkSetEncodingFrame specifies the data frame (table) to encode,
+//if applicable to the current format.
+func MkSetEncodingFrame(f string) Instruction {
+	return func(m *Machine) error {
+		m.eframe = f
+		return nil
+	}
+}
+
 //MkPush returns an instruction that pushes what onto the stack when executed.
 func MkPush(what interface{}) Instruction {
 	return func(m *Machine) error {
