@@ -26,7 +26,7 @@ type assertionError struct {
 }
 
 func (a assertionError) Error() string {
-	return fmt.Sprintf("%s: assertion error: %s", a.pos, a.msg)
+	return fmt.Sprintf("%s: assertion failure: %s", a.pos, a.msg)
 }
 
 //MkAssert returns an assertion.
