@@ -3,6 +3,7 @@ package virt
 import (
 	"fmt"
 
+	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
@@ -43,6 +44,18 @@ func MkAssert(pos token.Position, msg, query string) Instruction {
 			}
 		}
 		return nil
+	}
+}
+
+func MkSetEncoder(e format.Encoder) Instruction {
+	return func(m *Machine) error {
+		return m.setEncoder(e)
+	}
+}
+
+func MkSetDecoder(d format.Decoder) Instruction {
+	return func(m *Machine) error {
+		return m.setDecoder(d)
 	}
 }
 

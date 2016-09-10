@@ -301,7 +301,7 @@ func (m *Machine) DerivedTableName() string {
 	return m.derivedTableName
 }
 
-func (m *Machine) SetDecoder(d format.Decoder) error {
+func (m *Machine) setDecoder(d format.Decoder) error {
 	if d == nil {
 		return errint.New("no decoder specified")
 	}
@@ -320,7 +320,7 @@ func (m *Machine) SetDecoder(d format.Decoder) error {
 	return m.decoder.Init(m.input)
 }
 
-func (m *Machine) SetEncoder(e format.Encoder) error {
+func (m *Machine) setEncoder(e format.Encoder) error {
 	if e == nil {
 		return errint.New("no encoder specified")
 	}
