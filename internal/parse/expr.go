@@ -5,7 +5,7 @@ import (
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/null"
-	"github.com/jimmyfrasche/etlite/internal/internal/runefrom"
+	"github.com/jimmyfrasche/etlite/internal/parse/internal/runefrom"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
