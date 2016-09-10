@@ -13,7 +13,6 @@ import (
 
 type compiler struct {
 	usedStdin bool
-	sqlDepth  int
 	inst      []virt.Instruction
 }
 

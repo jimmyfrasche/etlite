@@ -1,7 +1,7 @@
 package compile
 
 import (
-	"fmt"
+	"strconv"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
@@ -27,10 +27,6 @@ func (c *compiler) release() {
 }
 
 func (c *compiler) compileSQL(s *ast.SQL) {
-	c.sqlDepth++
-	defer func() {
-		c.sqlDepth--
-	}()
 
 	//CREATE TABLE ... FROM IMPORT is a special case
 	if len(s.Name) > 0 {
@@ -66,7 +62,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 		//compile the imports
 		tbls = make([]string, len(s.Subqueries))
 		for i, imp := range s.Subqueries {
-			tbls[i] = fmt.Sprintf("[%d-%d]", c.sqlDepth, i)
+			tbls[i] = "[" + strconv.Itoa(i) + "]"
 			c.compileSubImport(imp, tbls[i])
 		}
 
