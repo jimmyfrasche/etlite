@@ -32,7 +32,7 @@ func (i *Import) Pos() token.Position {
 func printCols(w *writer.Writer, cols []string) {
 	for i, c := range cols {
 		w.Str(c)
-		if i != len(cols) {
+		if i != len(cols)-1 {
 			w.Str(", ")
 		}
 	}
