@@ -91,9 +91,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 
 	//if this was an etl subquery, handle teardown
 	if len(s.Subqueries) > 0 {
-		for i := range s.Subqueries {
-			c.push(virt.MkDropTempTable(tbls[i]))
-		}
+		c.push(virt.MkDropTempTables(tbls))
 		c.release()
 	}
 }

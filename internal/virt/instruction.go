@@ -107,8 +107,13 @@ func MkCreateTableFrom(pos token.Position, name, ddl string) Instruction {
 	}
 }
 
-func MkDropTempTable(name string) Instruction {
+func MkDropTempTables(names []string) Instruction {
 	return func(m *Machine) error {
-		return m.exec("DROP TABLE temp." + name)
+		for _, name := range names {
+			if err := m.exec("DROP TABLE temp." + name); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 }
