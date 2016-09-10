@@ -20,6 +20,9 @@ func (s *stdout) Name() string {
 	return "-"
 }
 
+func (*stdout) Cancel() {
+}
+
 //Unwrap returns the underlying bufio.Writer.
 func (s *stdout) Unwrap() *bufio.Writer {
 	return s.Writer

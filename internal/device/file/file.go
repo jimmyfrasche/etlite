@@ -80,8 +80,9 @@ func (f *Reader) Close() error {
 //
 //It is written to a tmp file and renamed on Close.
 type Writer struct {
-	name string
-	f    *os.File //the tmp file
+	name      string
+	cancelled bool
+	f         *os.File //the tmp file
 	*bufio.Writer
 }
 
@@ -103,6 +104,10 @@ func NewWriter(name string) (*Writer, error) {
 //Name reports the name the file will have when closed.
 func (f *Writer) Name() string {
 	return f.name
+}
+
+func (f *Writer) Cancel() {
+	f.cancelled = true
 }
 
 //Unwrap returns the underlying bufio.Writer.
@@ -143,14 +148,20 @@ func (f *Writer) Close() error {
 		return errsys.Wrap(err)
 	}
 
+	//this is the file we've actually been writing to.
+	tmpnm := f.f.Name()
+
+	//if we've been cancelled we don't want to overwrite the file,
+	//just remove the temp file.
+	if f.cancelled {
+		return os.Remove(tmpnm)
+	}
+
 	//sync to the disk, even though is probably a lie
 	if err := f.f.Sync(); err != nil {
 		_ = f.f.Close()
 		return errsys.Wrap(err)
 	}
-
-	//this is the file we've actually been writing to.
-	tmpnm := f.f.Name()
 
 	//get rid of the file handle
 	if err := f.f.Close(); err != nil {

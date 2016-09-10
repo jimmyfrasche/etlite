@@ -29,6 +29,9 @@ type Writer interface {
 	Unwrap() *bufio.Writer
 	//Name returns the target name of the file or - for stdout.
 	Name() string
+	//Cancel tells the Writer to continue operating as normally but
+	//the Writer can choose not to create a final output.
+	Cancel()
 }
 
 //File is a device backed by an os.File that allows access directly
