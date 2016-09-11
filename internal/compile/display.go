@@ -13,5 +13,5 @@ func (c *compiler) compileDisplay(d *ast.Display) {
 
 	c.compileFormat(d.Format, outputFormat)
 	c.compileDevice(d.Device, outputDevice)
-	c.push(virt.MkSetEncodingFrame(d.Frame))
+	c.push(virt.SetEncodingFrame(d.Frame))
 }

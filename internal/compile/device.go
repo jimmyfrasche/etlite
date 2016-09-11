@@ -22,9 +22,9 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 
 	case *ast.DeviceStdio: //never pushes
 		if read {
-			c.push(virt.MkUseStdin())
+			c.push(virt.UseStdin())
 		} else {
-			c.push(virt.MkUseStdout())
+			c.push(virt.UseStdout())
 		}
 
 	case *ast.DeviceFile: //always pushes filename
@@ -33,9 +33,9 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 			panic(errint.Newf("file device name must be literal or string got %s", d.Name.Kind))
 		}
 		if read {
-			c.push(virt.MkUseFileInput(name))
+			c.push(virt.UseFileInput(name))
 		} else {
-			c.push(virt.MkUseFileOutput(name))
+			c.push(virt.UseFileOutput(name))
 		}
 	}
 }

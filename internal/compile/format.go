@@ -62,7 +62,7 @@ func (c *compiler) formatCSV(f *ast.FormatCSV, read bool) {
 			NoHeader: f.NoHeader,
 			UseCRLF:  useCRLF,
 		}
-		c.push(virt.MkSetDecoder(d))
+		c.push(virt.SetDecoder(d))
 	} else { //encoder
 		e := &csvfmt.Encoder{
 			Null:     f.Null,
@@ -71,7 +71,7 @@ func (c *compiler) formatCSV(f *ast.FormatCSV, read bool) {
 			NoHeader: f.NoHeader,
 			UseCRLF:  useCRLF,
 		}
-		c.push(virt.MkSetEncoder(e))
+		c.push(virt.SetEncoder(e))
 	}
 }
 
@@ -96,7 +96,7 @@ func (c *compiler) formatRaw(f *ast.FormatRaw, read bool) {
 			Strict:   f.Strict,
 			NoHeader: !f.Header,
 		}
-		c.push(virt.MkSetDecoder(d))
+		c.push(virt.SetDecoder(d))
 	} else { //encoder
 		e := &rawfmt.Encoder{
 			Tab:      f.Delim,
@@ -104,7 +104,7 @@ func (c *compiler) formatRaw(f *ast.FormatRaw, read bool) {
 			Null:     f.Null,
 			NoHeader: !f.Header,
 		}
-		c.push(virt.MkSetEncoder(e))
+		c.push(virt.SetEncoder(e))
 	}
 }
 

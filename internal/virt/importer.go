@@ -44,7 +44,7 @@ func (s ImportSpec) Valid() error {
 	return nil
 }
 
-func MkImport(s ImportSpec) Instruction {
+func Import(s ImportSpec) Instruction {
 	return func(m *Machine) error {
 		if err := s.Valid(); err != nil {
 			return err

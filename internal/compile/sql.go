@@ -46,7 +46,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	//if etl subquery, handle set up
 	var tbls []string
 	if len(s.Subqueries) > 0 {
-		c.push(virt.MkSavepoint())
+		c.push(virt.Savepoint())
 
 		//compile the imports
 		tbls = make([]string, len(s.Subqueries))
@@ -76,11 +76,11 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	if err != nil {
 		panic(err)
 	}
-	c.push(virt.MkQuery(q))
+	c.push(virt.Query(q))
 
 	//if this was an etl subquery, handle teardown
 	if len(s.Subqueries) > 0 {
-		c.push(virt.MkDropTempTables(tbls))
-		c.push(virt.MkRelease())
+		c.push(virt.DropTempTables(tbls))
+		c.push(virt.Release())
 	}
 }

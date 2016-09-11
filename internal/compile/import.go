@@ -16,7 +16,7 @@ func (c *compiler) compileCreateTableAsImport(name, ddl string, i *ast.Import) {
 	}
 
 	c.compileImportDeviceAndFormat(i)
-	c.push(virt.MkImport(virt.ImportSpec{
+	c.push(virt.Import(virt.ImportSpec{
 		Pos:    i.Pos(),
 		Table:  name,
 		Limit:  i.Limit,
@@ -34,7 +34,7 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 	}
 
 	c.compileImportDeviceAndFormat(i)
-	c.push(virt.MkImport(virt.ImportSpec{
+	c.push(virt.Import(virt.ImportSpec{
 		Pos:      i.Pos(),
 		Internal: true,
 		Table:    tbl,
@@ -45,7 +45,7 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 
 func (c *compiler) compileImport(i *ast.Import) {
 	c.compileImportDeviceAndFormat(i)
-	c.push(virt.MkImport(virt.ImportSpec{
+	c.push(virt.Import(virt.ImportSpec{
 		Pos:    i.Pos(),
 		Temp:   i.Temporary,
 		Table:  i.Table,

@@ -1,9 +1,9 @@
 package virt
 
-//MkQuery creates an Instruction out of SQL query q.
+//Query creates an Instruction out of SQL query q.
 //If q returns no columns, it is merely exec'd without export.
 //Otherwise, an export is done using the export spec and the current output.
-func MkQuery(q string) Instruction {
+func Query(q string) Instruction {
 	return func(m *Machine) error {
 		stmt, err := m.conn.Prepare(q)
 		if err != nil {

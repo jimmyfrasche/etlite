@@ -34,8 +34,8 @@ func (a assertionError) Error() string {
 	return fmt.Sprintf("%s: assertion failure: %s", a.pos, a.msg)
 }
 
-//MkAssert returns an assertion.
-func MkAssert(pos token.Position, msg, query string) Instruction {
+//Assert returns an assertion.
+func Assert(pos token.Position, msg, query string) Instruction {
 	return func(m *Machine) error {
 		ret, err := m.conn.Assert(query)
 		if err != nil {
@@ -51,40 +51,40 @@ func MkAssert(pos token.Position, msg, query string) Instruction {
 	}
 }
 
-func MkSetEncoder(e format.Encoder) Instruction {
+func SetEncoder(e format.Encoder) Instruction {
 	return func(m *Machine) error {
 		return m.setEncoder(e)
 	}
 }
 
-func MkSetDecoder(d format.Decoder) Instruction {
+func SetDecoder(d format.Decoder) Instruction {
 	return func(m *Machine) error {
 		return m.setDecoder(d)
 	}
 }
 
-//MkSetEncodingFrame specifies the data frame (table) to encode,
+//SetEncodingFrame specifies the data frame (table) to encode,
 //if applicable to the current format.
-func MkSetEncodingFrame(f string) Instruction {
+func SetEncodingFrame(f string) Instruction {
 	return func(m *Machine) error {
 		m.eframe = f
 		return nil
 	}
 }
 
-func MkUseStdout() Instruction {
+func UseStdout() Instruction {
 	return func(m *Machine) error {
 		return m.setOutput(std.Out)
 	}
 }
 
-func MkUseStdin() Instruction {
+func UseStdin() Instruction {
 	return func(m *Machine) error {
 		return m.setInput(std.In, "[-]")
 	}
 }
 
-func MkUseFileOutput(fname string) Instruction {
+func UseFileOutput(fname string) Instruction {
 	return func(m *Machine) error {
 		f, err := file.NewWriter(fname)
 		if err != nil {
@@ -94,7 +94,7 @@ func MkUseFileOutput(fname string) Instruction {
 	}
 }
 
-func MkUseFileInput(fname string) Instruction {
+func UseFileInput(fname string) Instruction {
 	return func(m *Machine) error {
 		f, err := file.NewReader(fname)
 		if err != nil {
@@ -116,19 +116,19 @@ func MkUseFileInput(fname string) Instruction {
 	}
 }
 
-func MkSavepoint() Instruction {
+func Savepoint() Instruction {
 	return func(m *Machine) error {
 		return m.savepointStmt.Exec()
 	}
 }
 
-func MkRelease() Instruction {
+func Release() Instruction {
 	return func(m *Machine) error {
 		return m.releaseStmt.Exec()
 	}
 }
 
-func MkDropTempTables(names []string) Instruction {
+func DropTempTables(names []string) Instruction {
 	return func(m *Machine) error {
 		for _, name := range names {
 			if err := m.exec("DROP TABLE temp." + name); err != nil {

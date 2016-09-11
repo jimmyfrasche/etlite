@@ -11,5 +11,5 @@ func (c *compiler) compileAssert(a *ast.Assert) {
 	if err != nil {
 		panic(err)
 	}
-	c.push(virt.MkAssert(a.Pos(), msg, q))
+	c.push(virt.Assert(a.Pos(), msg, q))
 }
