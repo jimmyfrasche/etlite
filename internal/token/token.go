@@ -41,6 +41,19 @@ func (v Value) Literal(s string) bool {
 	return v.Kind == Literal && v.Canon == s
 }
 
+//AnyLiteral sees if v is any of the ss.
+func (v Value) AnyLiteral(ss ...string) bool {
+	if v.Kind != Literal {
+		return false
+	}
+	for _, s := range ss {
+		if v.Canon == s {
+			return true
+		}
+	}
+	return false
+}
+
 //Valid token.
 func (v Value) Valid() bool {
 	return v.Kind != Illegal

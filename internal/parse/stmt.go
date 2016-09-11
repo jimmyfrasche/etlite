@@ -32,7 +32,7 @@ func (p *parser) useStmt(t token.Value) *ast.Use {
 	}
 
 	t = p.next()
-	if t.Literal("DATABASE") || t.Literal("DB") {
+	if t.AnyLiteral("DATABASE", "DB") {
 		t = p.next()
 	}
 
@@ -108,7 +108,7 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 		Offset:   -1,
 	}
 	t = p.next()
-	if t.Literal("TEMP") || t.Literal("TEMPORARY") {
+	if t.AnyLiteral("TEMP", "TEMPORARY") {
 		i.Temporary = true
 		t = p.next()
 	}
@@ -222,7 +222,7 @@ func (p *parser) parseSQL(t token.Value, subquery, allowETLsq bool) *ast.SQL { /
 	if t.Literal("CREATE") {
 		push()
 		t = p.next()
-		if t.Literal("TEMP") || t.Literal("TEMPORARY") {
+		if t.AnyLiteral("TEMP", "TEMPORARY") {
 			push()
 			t = p.next()
 		}

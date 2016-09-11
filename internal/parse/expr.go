@@ -71,7 +71,7 @@ func (p *parser) formatRaw(t token.Value) (ast.Format, token.Value) {
 	f.Delim, t = p.delim(t)
 	f.Line, t = p.lineEnding(t)
 	f.Null, t = p.null(t)
-	if t.Literal("HEADER") || t.Literal("HDR") {
+	if t.AnyLiteral("HEADER", "HDR") {
 		f.Header = true
 		t = p.next()
 	}
@@ -93,7 +93,7 @@ func (p *parser) formatCSV(t token.Value) (ast.Format, token.Value) {
 	f.Quote, t = p.quote(t)
 	f.Line, t = p.lineEnding(t)
 	f.Null, t = p.null(t)
-	if t.Literal("NOHEADER") || t.Literal("NOHDR") {
+	if t.AnyLiteral("NOHEADER", "NOHDR") {
 		f.NoHeader = true
 		t = p.next()
 	}
@@ -133,7 +133,7 @@ func (p *parser) rune(t token.Value) (rune, token.Value) {
 }
 
 func (p *parser) delim(t token.Value) (rune, token.Value) {
-	if t.Literal("DELIM") || t.Literal("DELIMITER") {
+	if t.AnyLiteral("DELIM", "DELIMITER") {
 		return p.rune(p.next())
 	}
 	return -1, t
