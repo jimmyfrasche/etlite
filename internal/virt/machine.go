@@ -10,7 +10,6 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/format/rawfmt"
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
-	"github.com/jimmyfrasche/etlite/internal/internal/null"
 	"github.com/jimmyfrasche/etlite/internal/virt/internal/sysdb"
 )
 
@@ -51,7 +50,6 @@ type Machine struct {
 	sys                        *sysdb.Sysdb
 	savepointStmt, releaseStmt *driver.Stmt
 
-	stack            []interface{}
 	derivedTableName string
 }
 
@@ -94,7 +92,6 @@ func New(savepoints []string, s Spec) (*Machine, error) {
 		input:   in,
 		encoder: e,
 		decoder: dec,
-		stack:   make([]interface{}, 0, 128),
 	}
 	//Init default dec/enc
 	if err := m.decoder.Init(m.input); err != nil {
@@ -157,95 +154,6 @@ func (m *Machine) Environ() ([]string, error) {
 //Name reports the name of the main database.
 func (m *Machine) Name() string {
 	return m.name
-}
-
-func (m *Machine) push(what interface{}) {
-	m.stack = append(m.stack, what)
-}
-
-func (m *Machine) pop() (val interface{}, err error) {
-	if len(m.stack) == 0 {
-		return nil, errint.New("stack underflow")
-	}
-	end := len(m.stack) - 1
-	val, m.stack[end] = m.stack[end], nil
-	m.stack = m.stack[:end]
-	return val, nil
-}
-
-//PopString pops a string off the stack.
-func (m *Machine) PopString() (string, error) {
-	v, err := m.pop()
-	if err != nil {
-		return "", err
-	}
-	s, ok := v.(string)
-	if !ok {
-		return "", errint.Newf("expected string on stack but found %#v", v)
-	}
-	return s, nil
-}
-
-//PopStrings pops a []string off the stack.
-func (m *Machine) PopStrings() ([]string, error) {
-	v, err := m.pop()
-	if err != nil {
-		return nil, err
-	}
-	s, ok := v.([]string)
-	if !ok {
-		return nil, errint.Newf("expected []string on stack but found %#v", v)
-	}
-	return s, nil
-}
-
-//PopNullEncoding pops a null.Encoding off the stack.
-func (m *Machine) PopNullEncoding() (null.Encoding, error) {
-	v, err := m.pop()
-	if err != nil {
-		return "", err
-	}
-	n, ok := v.(null.Encoding)
-	if !ok {
-		return "", errint.Newf("expected null encoding on stack but found %#v", v)
-	}
-	return n, nil
-}
-
-func (m *Machine) PopBool() (bool, error) {
-	v, err := m.pop()
-	if err != nil {
-		return false, err
-	}
-	b, ok := v.(bool)
-	if !ok {
-		return false, errint.Newf("expected bool on stack but found %#v", v)
-	}
-	return b, nil
-}
-
-func (m *Machine) PopInt() (int, error) {
-	v, err := m.pop()
-	if err != nil {
-		return 0, err
-	}
-	i, ok := v.(int)
-	if !ok {
-		return 0, errint.Newf("expected int on stack but found %#v", v)
-	}
-	return i, nil
-}
-
-func (m *Machine) PopRune() (rune, error) {
-	v, err := m.pop()
-	if err != nil {
-		return 0, err
-	}
-	r, ok := v.(rune)
-	if !ok {
-		return 0, errint.Newf("expected rune on stack but found %#v", v)
-	}
-	return r, nil
 }
 
 func (m *Machine) setOutput(o device.Writer) error {

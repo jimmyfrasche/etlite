@@ -116,36 +116,6 @@ func MkUseFileInput(fname string) Instruction {
 	}
 }
 
-//MkPush returns an instruction that pushes what onto the stack when executed.
-func MkPush(what interface{}) Instruction {
-	return func(m *Machine) error {
-		m.push(what)
-		return nil
-	}
-}
-
-//MkPushSubquery creates an instruction that executes the subquery sq.
-//If handle is non-nil, it's used to validate and/or transform the result.
-//Then the result of sq is pushed onto the stack.
-func MkPushSubquery(sq string, handle func(*string) (interface{}, error)) Instruction {
-	return func(m *Machine) error {
-		ret, err := m.subquery(sq)
-		if err != nil {
-			return err
-		}
-		if handle != nil {
-			what, err := handle(ret)
-			if err != nil {
-				return err
-			}
-			m.push(what)
-			return nil
-		}
-		m.push(ret)
-		return nil
-	}
-}
-
 func MkSavepoint() Instruction {
 	return func(m *Machine) error {
 		return m.savepointStmt.Exec()
