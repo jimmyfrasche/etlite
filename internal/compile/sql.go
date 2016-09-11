@@ -61,7 +61,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 			if t.Kind == token.Placeholder {
 				s.Tokens[j] = token.Value{
 					Kind:  token.Literal,
-					Value: "select * from temp." + tbls[i], //TODO create synthetic tokens
+					Value: "select * from temp." + tbls[i],
 				}
 				i++
 			}
