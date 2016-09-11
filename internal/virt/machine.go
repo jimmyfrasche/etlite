@@ -145,12 +145,6 @@ func (m *Machine) Close() (errs []error) {
 	return
 }
 
-//Environ dumps sys.env (which the user is free to modify)
-//in Go readable format.
-func (m *Machine) Environ() ([]string, error) {
-	return m.sys.Environ()
-}
-
 //Name reports the name of the main database.
 func (m *Machine) Name() string {
 	return m.name
