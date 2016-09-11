@@ -365,3 +365,11 @@ func (m *Machine) subquery(q string) (*string, error) {
 
 	return s.Subquery()
 }
+
+func (m *Machine) savepoint() error {
+	return m.savepointStmt.Exec()
+}
+
+func (m *Machine) release() error {
+	return m.releaseStmt.Exec()
+}

@@ -18,14 +18,6 @@ func tblFrom(nm []token.Value) string {
 	return s
 }
 
-func (c *compiler) savepoint() {
-	c.push(virt.MkSavepoint())
-}
-
-func (c *compiler) release() {
-	c.push(virt.MkRelease())
-}
-
 func (c *compiler) compileSQL(s *ast.SQL) {
 
 	//CREATE TABLE ... FROM IMPORT is a special case
@@ -45,10 +37,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 		}
 
 		i := s.Subqueries[0]
-		c.push(virt.MkCreateTableFrom(i.Pos(), nm, ddl))
-		c.savepoint()
-		c.compileCreateTableAsImport(nm, i)
-		c.release()
+		c.compileCreateTableAsImport(nm, ddl, i)
 		return
 	}
 
@@ -57,7 +46,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	//if etl subquery, handle set up
 	var tbls []string
 	if len(s.Subqueries) > 0 {
-		c.savepoint()
+		c.push(virt.MkSavepoint())
 
 		//compile the imports
 		tbls = make([]string, len(s.Subqueries))
@@ -92,6 +81,6 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	//if this was an etl subquery, handle teardown
 	if len(s.Subqueries) > 0 {
 		c.push(virt.MkDropTempTables(tbls))
-		c.release()
+		c.push(virt.MkRelease())
 	}
 }

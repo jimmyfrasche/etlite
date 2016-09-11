@@ -1,27 +1,137 @@
 package virt
 
 import (
+	"errors"
 	"io"
 
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/token"
 	"github.com/jimmyfrasche/etlite/internal/virt/internal/builder"
 )
 
-//TODO create an enum of current states and track transitions within methods and instructions
-//so we can report an internal error if things are used out of sequence
+type ImportSpec struct {
+	Pos            token.Position
+	Internal, Temp bool
+	Table, Frame   string
+	Header         []string
+	DDL            string
+	Limit, Offset  int
+}
 
-//DecodeHeader reads the header from the current input device with the current decoder.
-func (m *Machine) DecodeHeader(table string, header []string) ([]string, error) {
-	// make sure we have a decoder and an input
-	if m.input == nil {
-		return nil, errint.New("no input when attempting to init decoder")
+func (s ImportSpec) Valid() error {
+	if s.DDL != "" {
+		if s.Internal {
+			return errint.New("CREATE TABLE FROM marked as internal table")
+		}
+		if s.Temp {
+			return errint.New("CREATE TABLE FROM marked as temporary table (by system, not user)")
+		}
+		if len(s.Header) > 0 {
+			return errint.New("CREATE TABLE FROM provides user defined header")
+		}
+		if s.Table == "" {
+			return errint.New("CREATE TABLE FROM provides no table name")
+		}
+	} else if s.Internal {
+		if s.Temp {
+			return errint.New("internal table marked as temporary (by system, not user)")
+		}
+		if s.Table == "" {
+			return errint.New("internal table did not provide name")
+		}
 	}
+	return nil
+}
+
+func MkImport(s ImportSpec) Instruction {
+	return func(m *Machine) error {
+		if err := s.Valid(); err != nil {
+			return err
+		}
+
+		//CREATE TABLE FROM
+		if s.DDL != "" {
+			//build table and compute header
+			if err := m.exec(s.DDL); err != nil {
+				return errusr.Wrap(s.Pos, err)
+			}
+			p, err := m.conn.Prepare("SELECT * FROM " + s.Table)
+			if err != nil {
+				return err
+			}
+			s.Header = p.Columns()
+			if len(s.Header) == 0 {
+				return errint.New("could not retrieve columns in CREATE TABLE FROM")
+			}
+			if err := p.Close(); err != nil {
+				return err
+			}
+		}
+
+		//derive table name, if none provided
+		if s.Table == "" {
+			//this is an import statement by construction: CREATE TABLE FROM and internal always named
+
+			if s.Frame != "" {
+				s.Table = s.Frame
+			} else if m.derivedTableName != "" {
+				s.Table = m.derivedTableName
+			} else {
+				return errint.New("failed to derive table name")
+			}
+		}
+
+		//prep the decoder
+		inHeader, err := m.readHeader(s.Table, s.Frame, s.Header)
+		if err != nil {
+			return err
+		}
+
+		//no header specified, use the one from the decoder
+		if len(s.Header) == 0 {
+			if len(inHeader) == 0 {
+				return errors.New("no header specified and none returned by " + m.decoder.Name() + " format")
+			}
+			s.Header = inHeader
+		}
+
+		//internal tables can be created en masse so have to take care of their own savepointing.
+		if !s.Internal {
+			if err := m.savepoint(); err != nil {
+				return err
+			}
+		}
+
+		//not a CREATE TABLE FROM so we need to make the table
+		if s.DDL == "" {
+			if err := m.createTable(s.Temp || s.Internal, s.Table, s.Header); err != nil {
+				return err
+			}
+		}
+
+		if err := m.bulkInsert(s.Table, s.Header, s.Limit, s.Offset); err != nil {
+			return err
+		}
+
+		if !s.Internal {
+			if err := m.release(); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+func (m *Machine) readHeader(table, frame string, header []string) ([]string, error) {
 	dec := m.decoder
 	if dec == nil {
-		return nil, errint.New("no decoder when attempting to init decoder")
+		return nil, errint.New("no decoder available when importing")
 	}
-	if m.dframe != "" {
-		table = m.dframe
+
+	if frame != "" {
+		table = frame
 	}
 
 	return dec.ReadHeader(table, header)
@@ -32,7 +142,7 @@ func (m *Machine) DecodeHeader(table string, header []string) ([]string, error) 
 //InitDecoder must be called before this.
 //
 //See MkCreateTableFrom and BulkInsert.
-func (m *Machine) CreateTable(temp bool, name string, header []string) error {
+func (m *Machine) createTable(temp bool, name string, header []string) error {
 	//create ddl
 	b := builder.New("CREATE")
 
@@ -58,7 +168,7 @@ func (m *Machine) CreateTable(temp bool, name string, header []string) error {
 //reads to or changes of the decoder.
 //
 //Before that DecodeHeader must be called.
-func (m *Machine) BulkInsert(name string, header []string, limit, offset int) error {
+func (m *Machine) bulkInsert(name string, header []string, limit, offset int) error {
 	//make sure we have a decoder
 	dec := m.decoder
 	if dec == nil {

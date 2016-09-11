@@ -153,11 +153,11 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 		end = token.RParen
 	}
 	if !t.Literal("LIMIT") && !t.Literal("OFFSET") && t.Kind != end {
-		s, ok := t.Unescape()
+		_, ok := t.Unescape()
 		if !ok {
 			panic(p.expected("table name", t))
 		}
-		i.Table = s
+		i.Table = t.Value
 		t = p.next()
 	}
 

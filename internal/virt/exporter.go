@@ -7,6 +7,7 @@ func MkQuery(q string) Instruction {
 	return func(m *Machine) error {
 		stmt, err := m.conn.Prepare(q)
 		if err != nil {
+			//TODO if a syntax error return an etlite syntax error
 			return err
 		}
 		defer stmt.Close()

@@ -8,7 +8,6 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/device/file"
 	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/format"
-	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
@@ -156,25 +155,6 @@ func MkSavepoint() Instruction {
 func MkRelease() Instruction {
 	return func(m *Machine) error {
 		return m.releaseStmt.Exec()
-	}
-}
-
-//MkCreateTableFrom creates table name from ddl and pushes the header of the table
-//on the stack.
-//
-//See CreateTable and BulkInsert methods.
-func MkCreateTableFrom(pos token.Position, name, ddl string) Instruction {
-	return func(m *Machine) error {
-		if err := m.exec(ddl); err != nil {
-			return errusr.Wrap(pos, err)
-		}
-
-		p, err := m.conn.Prepare("SELECT * FROM " + name)
-		if err != nil {
-			return err
-		}
-		m.push(p.Columns())
-		return p.Close()
 	}
 }
 
