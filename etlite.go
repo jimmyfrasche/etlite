@@ -81,7 +81,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	vm, err := virt.New(nil, virt.Spec{
+	vm, err := virt.New(virt.Spec{
 		Database: db,
 	})
 	if err != nil {

@@ -54,7 +54,7 @@ type Machine struct {
 }
 
 //New creates and prepares an execution context.
-func New(savepoints []string, s Spec) (*Machine, error) {
+func New(s Spec) (*Machine, error) {
 	db := s.Database
 	if db == "" {
 		db = ":memory:"
