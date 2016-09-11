@@ -264,16 +264,6 @@ func (m *Machine) exec(q string) error {
 	return s.Exec()
 }
 
-func (m *Machine) subquery(q string) (*string, error) {
-	s, err := m.conn.Prepare(q)
-	if err != nil {
-		return nil, err
-	}
-	defer s.Close()
-
-	return s.Subquery()
-}
-
 func (m *Machine) savepoint() error {
 	return m.savepointStmt.Exec()
 }
