@@ -1,8 +1,6 @@
 package virt
 
 import (
-	"os"
-
 	"github.com/jimmyfrasche/etlite/internal/device"
 	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/driver"
@@ -13,29 +11,6 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/virt/internal/sysdb"
 )
 
-//Spec specifies the defaults for a Machine.
-type Spec struct {
-	//Database is the name of the SQLite db file or the empty string
-	//for an in-memory database.
-	Database string
-	//Input is the initial input device, or stdin if nil.
-	Input device.Reader
-	//Output is the initial output device, or stdout if nil.
-	Output device.Writer
-	//Encoder is the initial encoder,
-	//or a csv encoder with platform specific EOL encoding if nil.
-	Encoder format.Encoder
-	//Decoder is the intital decoder,
-	//or a csv decoder with platform specific EOL encoding if nil.
-	Decoder format.Decoder
-	//Environ is the environment to use to populate sys.env,
-	//or os.Environ if nil.
-	Environ []string
-	//Args is used to populate sys.arg.
-	//There is no default for Args.
-	Args []string
-}
-
 //Machine represents an execution context for a script.
 type Machine struct {
 	name    string
@@ -45,17 +20,14 @@ type Machine struct {
 	encoder format.Encoder
 	decoder format.Decoder
 
-	eframe, dframe string
-
 	sys                        *sysdb.Sysdb
 	savepointStmt, releaseStmt *driver.Stmt
 
-	derivedTableName string
+	eframe, derivedTableName string
 }
 
 //New creates and prepares an execution context.
-func New(s Spec) (*Machine, error) {
-	db := s.Database
+func New(db string, args, env []string) (*Machine, error) {
 	if db == "" {
 		db = ":memory:"
 	}
@@ -63,35 +35,19 @@ func New(s Spec) (*Machine, error) {
 	if err != nil {
 		return nil, err
 	}
-	o := s.Output
-	if o == nil {
-		o = std.Out
-	}
-	in := s.Input
-	if in == nil {
-		in = std.In
-	}
-	e := s.Encoder
-	if e == nil {
-		e = &rawfmt.Encoder{
-			UseCRLF:  eol.Default,
-			NoHeader: true,
-		}
-	}
-	dec := s.Decoder
-	if dec == nil {
-		dec = &rawfmt.Decoder{
-			UseCRLF:  eol.Default,
-			NoHeader: true,
-		}
-	}
 	m := &Machine{
-		name:    db,
-		conn:    c,
-		output:  o,
-		input:   in,
-		encoder: e,
-		decoder: dec,
+		name:   db,
+		conn:   c,
+		output: std.Out,
+		input:  std.In,
+		encoder: &rawfmt.Encoder{
+			UseCRLF:  eol.Default,
+			NoHeader: true,
+		},
+		decoder: &rawfmt.Decoder{
+			UseCRLF:  eol.Default,
+			NoHeader: true,
+		},
 	}
 	//Init default dec/enc
 	if err := m.decoder.Init(m.input); err != nil {
@@ -101,11 +57,7 @@ func New(s Spec) (*Machine, error) {
 		return nil, err
 	}
 
-	if s.Environ == nil {
-		s.Environ = os.Environ()
-	}
-
-	m.sys, err = sysdb.New(m.conn, s.Args, s.Environ)
+	m.sys, err = sysdb.New(m.conn, args, env)
 	if err != nil {
 		return nil, err
 	}
