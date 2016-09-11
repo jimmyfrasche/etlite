@@ -202,13 +202,6 @@ func (m *Machine) setInput(in device.Reader, derivedTableName string) error {
 	return m.decoder.Init(m.input)
 }
 
-//DerivedTableName returns the derivedTableName from the last call to SetInput.
-//
-//This is not stored on the stack as multiple imports may read from the same device.
-func (m *Machine) DerivedTableName() string {
-	return m.derivedTableName
-}
-
 func (m *Machine) setDecoder(d format.Decoder) error {
 	if d == nil {
 		return errint.New("no decoder specified")
@@ -245,12 +238,6 @@ func (m *Machine) setEncoder(e format.Encoder) error {
 	m.encoder = e
 
 	return m.encoder.Init(m.output)
-}
-
-//SetDecodingFrame specifies the data frame (table) to decode,
-//if applicable to the current format
-func (m *Machine) SetDecodingFrame(f string) {
-	m.dframe = f
 }
 
 //exec q.
