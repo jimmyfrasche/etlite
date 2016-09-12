@@ -1,10 +1,5 @@
 package token
 
-//Comma is true if v is a literal comma.
-func (v Value) Comma() bool {
-	return v.Kind == Literal && v.Value == ","
-}
-
 //Op is true if v is literal and first rune is one of "!@%&|-+=/<>"".
 func (v Value) Op() bool {
 	if v.Kind != Literal {

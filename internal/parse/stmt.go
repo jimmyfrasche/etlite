@@ -57,7 +57,7 @@ func (p *parser) assertStmt(t token.Value) *ast.Assert {
 	a.Message = t
 
 	t = p.expect(token.Literal)
-	if !t.Comma() {
+	if !t.Literal(",") {
 		panic(p.expected("comma", t))
 	}
 
@@ -128,7 +128,7 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 				t = p.next()
 				break
 			}
-			if !t.Comma() {
+			if !t.Literal(",") {
 				panic(p.unexpected(t))
 			}
 		}
