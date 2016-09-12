@@ -153,6 +153,8 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 		end = token.RParen
 	}
 	if !t.Literal("LIMIT") && !t.Literal("OFFSET") && t.Kind != end {
+		//TODO allow qualified names, use name from new sql parser but turn it into a string:
+		//pull impl from compiler
 		_, ok := t.Unescape()
 		if !ok {
 			panic(p.expected("table name", t))
