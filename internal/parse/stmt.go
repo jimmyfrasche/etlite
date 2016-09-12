@@ -56,10 +56,7 @@ func (p *parser) assertStmt(t token.Value) *ast.Assert {
 	t = p.expect(token.String)
 	a.Message = t
 
-	t = p.expect(token.Literal)
-	if !t.Literal(",") {
-		panic(p.expected("comma", t))
-	}
+	t = p.expectLit(",")
 
 	t = p.next()
 	switch t.Kind {
@@ -135,11 +132,8 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 	}
 
 	if t.Literal("FRAME") {
-		t = p.next()
-		s, ok := t.Unescape()
-		if !ok {
-			panic(p.unexpected(t))
-		}
+		t = p.expectLitOrStr()
+		s, _ := t.Unescape()
 		i.Frame = s
 		t = p.next()
 	}

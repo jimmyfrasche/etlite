@@ -78,6 +78,14 @@ func (p *parser) expect(k token.Kind) token.Value {
 	panic(p.unexpected(t))
 }
 
+func (p *parser) expectLitOrStr() token.Value {
+	t := p.next()
+	if t.Kind == token.Literal || t.Kind == token.String {
+		return t
+	}
+	panic(p.unexpected(t))
+}
+
 func (p *parser) expectLit(s string) token.Value {
 	t := p.expect(token.Literal)
 	if !t.Literal(s) {
@@ -113,10 +121,7 @@ func (p *parser) name(t token.Value) (next token.Value, name []token.Value) {
 	name = name[:3]
 	name[1] = t
 
-	t = p.next()
-	if t.Kind != token.Literal && t.Kind != token.String {
-		panic(p.unexpected(t))
-	}
+	t = p.expectLitOrStr()
 	name[2] = t
 
 	return p.next(), name
