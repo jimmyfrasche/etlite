@@ -62,35 +62,6 @@ func (p *sqlParser) maybeRun(t token.Value, lits ...string) token.Value {
 	return p.next()
 }
 
-//name reads an (optionally namespaced) name and collects the list of tokens
-//for further analysis.
-func (p *sqlParser) name(t token.Value) (next token.Value, name []token.Value) {
-	if t.Kind != token.Literal && t.Kind != token.String {
-		panic(p.unexpected(t))
-	}
-	name = make([]token.Value, 1, 3)
-	name[0] = t
-	p.push(t)
-
-	t = p.next()
-	if !t.Literal(".") {
-		//not namespaced, just return
-		return t, name
-	}
-	name = name[:3]
-	name[1] = t
-	p.push(t)
-
-	t = p.next()
-	if t.Kind != token.Literal && t.Kind != token.String {
-		panic(p.unexpected(t))
-	}
-	name[2] = t
-	p.push(t)
-
-	return p.next(), name
-}
-
 //top does the statement level parsing
 func (p *sqlParser) top(t token.Value, subq, etl bool) {
 	//TODO recognize WITH so we can ban imports in DELETE with a better error message
@@ -211,6 +182,7 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 	//and validate that it's not reserved.
 	var name []token.Value
 	t, name = p.name(t)
+	p.extend(name...)
 	if len(name) == 3 {
 		s, _ := name[0].Unescape()
 		if strings.ToUpper(s) == "TEMP" {

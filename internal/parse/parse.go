@@ -95,3 +95,29 @@ func (p *parser) cantBe(ks ...token.Kind) token.Value {
 	}
 	return t
 }
+
+//name reads an (optionally qualified) name and collects the list of tokens
+//for further analysis.
+func (p *parser) name(t token.Value) (next token.Value, name []token.Value) {
+	if t.Kind != token.Literal && t.Kind != token.String {
+		panic(p.unexpected(t))
+	}
+	name = make([]token.Value, 1, 3)
+	name[0] = t
+
+	t = p.next()
+	if !t.Literal(".") {
+		//not namespaced, just return
+		return t, name
+	}
+	name = name[:3]
+	name[1] = t
+
+	t = p.next()
+	if t.Kind != token.Literal && t.Kind != token.String {
+		panic(p.unexpected(t))
+	}
+	name[2] = t
+
+	return p.next(), name
+}
