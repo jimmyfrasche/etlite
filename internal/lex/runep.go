@@ -52,7 +52,7 @@ func any(runes string) pred {
 }
 
 var (
-	reserved     = any("`" + `|/-+%~[]'"<>!=@$?;()&{}!^:\,`)
+	reserved     = any("`" + `|/-+%~[]'"<>!=@$?;.()&{}!^:\,`)
 	endOfLiteral = or(space, reserved, inRange(0, ' '))
 	digit        = inRange('0', '9')
 	hex          = or(digit, inRange('a', 'f'), inRange('A', 'F'))

@@ -136,7 +136,6 @@ func number(l *lexer) state {
 
 	dotSeen := l.c == '.'
 	eSeen := false
-	ln := 1
 	last := l.c
 
 	for {
@@ -159,10 +158,6 @@ func number(l *lexer) state {
 		last = l.c
 
 		l.consume()
-	}
-
-	if ln == 1 && last == '.' {
-		return l.error("unexpected .")
 	}
 
 	if last == 'e' || last == 'E' {

@@ -191,7 +191,6 @@ func TestNumber(t *testing.T) {
 	invalid := []struct {
 		in, err string
 	}{
-		{".", "unexpected ."},
 		{"1e", "no exponent on number"},
 		{"1e1e1", "invalid numeric literal: only one 'e' allowed"},
 		{"1.1.1", "invalid numeric literal: only one . allowed"},
