@@ -38,7 +38,7 @@ func (p *parser) useStmt(t token.Value) *ast.Use {
 
 	nm, ok := t.Unescape()
 	if !ok {
-		panic(p.expected(token.String, t))
+		panic(p.unexpected(t))
 	}
 	u.DB = nm
 
