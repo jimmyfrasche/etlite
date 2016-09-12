@@ -1,7 +1,6 @@
 package parse
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
@@ -42,8 +41,12 @@ func (p *sqlParser) synth(t token.Value, k token.Kind) {
 }
 
 func digital(s string) bool {
-	_, err := strconv.Atoi(s) //TODO just walk string and make sure it's ASCII digits
-	return err == nil
+	for i := 0; i < len(s); i++ {
+		if b := s[i]; b < '0' || b > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 //maybeRun eats possible runs of lits such as "IF", "NOT", "EXISTS".
@@ -62,7 +65,7 @@ func (p *sqlParser) maybeRun(t token.Value, lits ...string) token.Value {
 //name reads an (optionally namespaced) name and collects the list of tokens
 //for further analysis.
 func (p *sqlParser) name(t token.Value) (next token.Value, name []token.Value) {
-	if t.Kind != token.Literal || t.Kind != token.String {
+	if t.Kind != token.Literal && t.Kind != token.String {
 		panic(p.unexpected(t))
 	}
 	name = make([]token.Value, 1, 3)
@@ -79,7 +82,7 @@ func (p *sqlParser) name(t token.Value) (next token.Value, name []token.Value) {
 	p.push(t)
 
 	t = p.next()
-	if t.Kind != token.Literal || t.Kind != token.String {
+	if t.Kind != token.Literal && t.Kind != token.String {
 		panic(p.unexpected(t))
 	}
 	name[2] = t
