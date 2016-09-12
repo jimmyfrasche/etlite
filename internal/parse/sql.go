@@ -229,6 +229,8 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 		p.push(t)
 		_ = p.regular(p.next(), false, false, true)
 		//XXX is this fair? safe to do subimport in create table?
+		//XXX it wouldn't respect the usual rules and if it failed
+		//XXX the table wouldn't exist, unlike with import statement. Must think.
 		return
 	}
 
