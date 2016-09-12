@@ -85,3 +85,13 @@ func (p *parser) expectLit(s string) token.Value {
 	}
 	return t
 }
+
+func (p *parser) cantBe(ks ...token.Kind) token.Value {
+	t := p.next()
+	for _, k := range ks {
+		if t.Kind == k {
+			panic(p.unexpected(t))
+		}
+	}
+	return t
+}
