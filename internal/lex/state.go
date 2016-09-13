@@ -135,6 +135,14 @@ func number(l *lexer) state {
 	}
 
 	dotSeen := l.c == '.'
+	if dotSeen {
+		l.next()
+		if l.c == 'e' || l.c == 'E' {
+			l.emitLit()
+			return lexMain
+		}
+		l.rewind()
+	}
 	eSeen := false
 	last := l.c
 
