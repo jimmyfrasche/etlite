@@ -8,6 +8,9 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
+//TODO should recognize imports in compound selects (IMPORT ... UNION SELECT ... and vice versa) would just need to compile to subq import
+//just need to make sure no () are put around placeholder tokens
+
 type sqlParser struct {
 	*parser
 	sql *ast.SQL
@@ -49,6 +52,49 @@ func digital(s string) bool {
 	return true
 }
 
+func (p *sqlParser) chkDigTmp(name []token.Value) {
+	if len(name) == 3 {
+		s, _ := name[0].Unescape()
+		if strings.ToUpper(s) == "TEMP" {
+			s, _ = name[2].Unescape()
+			if digital(s) {
+				panic(p.errMsg(name[0], "digital temporary table names are reserved by etlite"))
+			}
+		}
+	}
+}
+
+func (p *sqlParser) tmpCheck(t token.Value) token.Value {
+	t, name := p.name(t)
+	p.chkDigTmp(name)
+	p.extend(name...)
+	return t
+}
+
+func (p *sqlParser) chkSysReserved(name []token.Value) {
+	if len(name) == 3 {
+		s, _ := name[0].Unescape()
+		//this fails if it relies on object resolution but catches some misuse.
+		//TODO could insert a flag in the AST to check sys names exist if length 1 and name[0] ∈ {args, env}?
+		if strings.ToUpper(s) == "SYS" {
+			s, _ = name[2].Unescape()
+			s = strings.ToUpper(s)
+			switch s {
+			case "ARGS", "ENV":
+				panic(p.errMsg(name[0], "sys.args and sys.env are reserved by etlite"))
+			}
+		}
+	}
+}
+
+func (p *sqlParser) tmpOrSysCheck(t token.Value) token.Value {
+	t, name := p.name(t)
+	p.chkDigTmp(name)
+	p.chkSysReserved(name)
+	p.extend(name...)
+	return t
+}
+
 //maybeRun eats possible runs of lits such as "IF", "NOT", "EXISTS".
 func (p *sqlParser) maybeRun(t token.Value, lits ...string) token.Value {
 	if !t.Literal(lits[0]) {
@@ -64,8 +110,10 @@ func (p *sqlParser) maybeRun(t token.Value, lits ...string) token.Value {
 
 //top does the statement level parsing
 func (p *sqlParser) top(t token.Value, subq, etl bool) {
-	//TODO recognize WITH so we can ban imports in DELETE with a better error message
-	//and so that we can special case UPDATE
+	if t.Kind != token.Literal {
+		panic(p.unexpected(t))
+	}
+
 	//Forbidden statements
 	if t.AnyLiteral("ANALYZE", "EXPLAIN", "ROLLBACK") {
 		panic(p.errMsg(t, "ANALYZE and EXPLAIN and ROLLBACK are not allowed"))
@@ -83,11 +131,27 @@ func (p *sqlParser) top(t token.Value, subq, etl bool) {
 
 	//These are very simple and we just need to make sure nothing's obviously wrong
 	//while seeking ;
-	if t.AnyLiteral("DROP", "BEGIN", "END", "VACCUM", "REINDEX") {
+	if t.AnyLiteral("BEGIN", "END", "VACCUM", "REINDEX") {
 		if subq {
 			panic(p.unexpected(t))
 		}
 		p.slurp(t)
+		return
+	}
+
+	//for these two we validate no reserved names are injured.
+	if t.Literal("ALTER") {
+		if subq {
+			panic(p.unexpected(t))
+		}
+		p.alterTable(t)
+		return
+	}
+	if t.Literal("DROP") {
+		if subq {
+			panic(p.unexpected(t))
+		}
+		p.drop(t)
 		return
 	}
 
@@ -111,8 +175,58 @@ func (p *sqlParser) top(t token.Value, subq, etl bool) {
 			return
 		}
 	}
+
 	//the stutter is not an accident: except for some special cases these are the same
-	_ = p.regular(t, subq, etl, etl)
+	switch t.Canon {
+	case "INSERT", "REPLACE":
+		_ = p.insert(t, subq, etl, etl)
+	case "DELETE":
+		_ = p.delete(t, subq, etl, etl)
+	case "UPDATE":
+		_ = p.update(t, subq, etl, etl)
+	case "WITH":
+		_ = p.with(t, subq, etl, etl)
+	default:
+		_ = p.regular(t, 0, subq, etl, etl)
+	}
+}
+
+func (p *sqlParser) alterTable(t token.Value) {
+	p.push(t)
+	t = p.expectLit("TABLE")
+	p.push(t)
+	t = p.tmpOrSysCheck(t)
+	switch t.Canon {
+	default:
+		panic(p.unexpected(t))
+	case "RENAME":
+		p.push(t)
+		t = p.expectLit("TO")
+		p.push(t)
+		t = p.tmpOrSysCheck(t)
+		if t.Kind != token.Semicolon {
+			panic(p.unexpected(t))
+		}
+		p.push(t)
+	case "ADD":
+		p.push(t)
+		_ = p.regular(t, 0, false, false, false)
+	}
+}
+
+func (p *sqlParser) drop(t token.Value) {
+	p.push(t)
+	t = p.expect(token.Literal)
+	if !t.Literal("TABLE") {
+		p.slurp(t)
+	}
+	p.push(t)
+	t = p.maybeRun(p.next(), "IF", "EXISTS")
+	t = p.tmpOrSysCheck(t)
+	if t.Kind != token.Semicolon {
+		panic(p.unexpected(t))
+	}
+	p.push(t)
 }
 
 func (p *sqlParser) saverelease(t token.Value) {
@@ -127,7 +241,6 @@ func (p *sqlParser) saverelease(t token.Value) {
 	}
 	p.push(t)
 	p.expect(token.Semicolon)
-	return
 }
 
 //slurp simple statements until semicolon, making sure nothing untoward happens.
@@ -137,6 +250,168 @@ func (p *sqlParser) slurp(t token.Value) {
 		t = p.cantBe(token.Argument, token.LParen, token.RParen)
 	}
 	p.push(t) //the ;
+}
+
+func (p *sqlParser) with(t token.Value, subq, etl, arg bool) token.Value {
+	p.push(t)
+	first := true
+	for {
+		t = p.expectLitOrStr() // name or possibly RECURSIVE if first time through
+
+		if t.Literal("RECURSIVE") {
+			if first {
+				p.push(t)
+				t = p.expectLitOrStr()
+			} else {
+				panic(p.unexpected(t))
+			}
+		}
+		first = false
+
+		p.push(t)
+		t = p.next()
+		if t.Kind == token.LParen { //optional column names
+			p.push(t)
+			for t.Kind != token.RParen {
+				t = p.next()
+				p.push(t)
+			}
+			t = p.next()
+		}
+		if t.Literal("AS") {
+			p.push(t)
+		} else {
+			panic(p.unexpected(t))
+		}
+
+		//The table expression
+		t = p.expect(token.LParen)
+		p.push(t)
+		t = p.expect(token.Literal)
+		if t.Literal("WITH") {
+			t = p.with(t, true, etl, arg)
+		} else {
+			t = p.regular(t, 1, true, etl, arg)
+		}
+
+		t = p.expect(token.Literal)
+		if !t.Literal(",") {
+			break
+		}
+	}
+
+	switch t.Canon {
+	default:
+		panic(p.unexpected(t))
+	case "INSERT", "REPLACE":
+		return p.insert(t, subq, etl, arg)
+	case "UPDATE":
+		//probably too complicated to do any special checking here but should at least check table name
+		return p.update(t, subq, etl, arg)
+	case "DELETE":
+		return p.delete(t, subq, etl, arg)
+	case "SELECT":
+		depth := 0
+		if subq {
+			depth++
+		}
+		return p.regular(t, depth, subq, etl, arg)
+	}
+}
+
+func (p *sqlParser) delete(t token.Value, subq, etl, arg bool) token.Value {
+	if subq {
+		panic(p.unexpected(t))
+	}
+	p.push(t)
+	t = p.expectLit("FROM")
+	p.push(t)
+	t = p.tmpCheck(p.next())
+	return p.regular(t, 0, subq, etl, arg)
+}
+
+func (p *sqlParser) update(t token.Value, subq, etl, arg bool) token.Value {
+	if subq {
+		panic(p.unexpected(t))
+	}
+	p.push(t)
+	t = p.expectLitOrStr()
+	if t.Literal("OR") {
+		p.push(t)
+		t = p.expect(token.Literal) //ROLLBACK, etc.
+		p.push(t)
+		t = p.next()
+	}
+	t = p.tmpCheck(t)
+	if !t.Literal("SET") {
+		panic(p.unexpected(t))
+	}
+	return p.regular(t, 0, subq, etl, arg)
+}
+
+func (p *sqlParser) insert(t token.Value, subq, etl, arg bool) token.Value {
+	if subq {
+		panic(p.unexpected(t))
+	}
+	replace := t.Literal("REPLACE")
+	p.push(t)
+
+	t = p.expect(token.Literal)
+	if t.Literal("OR") {
+		if replace {
+			panic(p.unexpected(t))
+		}
+		p.push(t)
+		t = p.expect(token.Literal) //ROLLBACK, etc.
+		p.push(t)
+		t = p.next()
+	}
+	if !t.Literal("INTO") {
+		panic(p.unexpected(t))
+	}
+	p.push(t)
+
+	t = p.tmpCheck(p.next())
+	if t.Kind != token.LParen {
+		panic(p.unexpected(t))
+	}
+	p.push(t)
+
+loop:
+	for {
+		t = p.expectLitOrStr()
+		p.push(t)
+		t = p.next()
+		switch {
+		default:
+			panic(p.unexpected(t))
+		case t.Literal(","):
+			p.push(t)
+		case t.Kind == token.RParen:
+			p.push(t)
+			break loop
+		}
+	}
+
+	t = p.expect(token.Literal)
+	switch t.Canon {
+	default:
+		panic(p.unexpected(t))
+	case "DEFAULT": //not to be confused with the above
+		p.push(t)
+		t = p.expectLit("VALUES")
+		p.push(t)
+		t = p.expect(token.Semicolon)
+		p.push(t)
+		return t //this isn't used anywhere, but needed for symmetry
+	case "IMPORT":
+		//TODO we could add a special FROM IMPORT here, with a little work
+		panic(p.errMsg(t, "INSERT ... IMPORT is currently unsupported"))
+	case "WITH": //XXX is this legal? Seems like it should be
+		return p.with(t, subq, etl, arg)
+	case "VALUES", "SELECT":
+		return p.regular(t, 0, subq, etl, arg)
+	}
 }
 
 //trigger handles triggers which have a special structure
@@ -165,11 +440,19 @@ func (p *sqlParser) trigger(t token.Value) {
 		}
 
 		//otherwise, make sure we have a valid head
-		if !t.AnyLiteral("INSERT", "UPDATE", "DELETE", "REPLACE", "SELECT", "WITH") {
+		switch t.Canon {
+		default:
 			panic(p.unexpected(t))
+		case "INSERT", "REPLACE":
+			t = p.insert(t, false, false, false)
+		case "UPDATE":
+			t = p.update(t, false, false, false)
+		case "DELETE":
+			t = p.delete(t, false, false, false)
+		case "SELECT":
+			t = p.regular(t, 0, false, false, false)
 		}
 		stmts++
-		t = p.regular(t, false, false, false)
 	}
 }
 
@@ -202,10 +485,12 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 
 	if t.Literal("AS") {
 		p.push(t)
-		_ = p.regular(p.next(), false, false, true)
+		_ = p.regular(p.next(), 0, false, false, true)
 		//XXX is this fair? safe to do subimport in create table?
 		//XXX it wouldn't respect the usual rules and if it failed
 		//XXX the table wouldn't exist, unlike with import statement. Must think.
+		//XXX note in ast, special case compiler to treat like normal subquery import
+		//XXX but release savepoint before create and drop tables after.
 		return
 	}
 
@@ -253,14 +538,11 @@ loop:
 }
 
 //The regular parser mops up everything else.
-func (p *sqlParser) regular(t token.Value, subq, etl, arg bool) token.Value {
-	//TODO check for cases where we recognize arguments but not imports, like DELETE, UPDATE
-
+func (p *sqlParser) regular(t token.Value, depth int, subq, etl, arg bool) token.Value {
 	//This handles all sql we don't explicitly recognize.
 	//It ensures that parens are balanced and finds the end of the statement
 	//or subquery,
 	//handling some special cases along the way.
-	depth := 0
 	for {
 		switch t.Kind {
 		case token.Semicolon:
@@ -286,34 +568,34 @@ func (p *sqlParser) regular(t token.Value, subq, etl, arg bool) token.Value {
 			depth++
 			p.push(t)
 			t = p.next()
+			if t.Kind != token.Literal {
+				continue
+			}
 
-			if !t.Literal("IMPORT") {
-				//quick sanity check while we're here,
-				//we have a non-subquery head in a subquery position:
-				//definite error.
+			switch t.Canon {
+			default:
 				if t.Head(false) && !t.Head(true) {
 					panic(p.unexpected(t))
 				}
 
-				//we could even end up back in this case if t = (,
-				//but that is the correct behavior, handling the case (((etc.
-				//for regular sql subqueries we just slurp em up
-				continue
+			case "WITH":
+				t = p.with(t, true, etl, arg)
+
+			case "IMPORT":
+				if !etl {
+					panic(p.errMsg(t, "illegal IMPORT subquery"))
+				}
+
+				//handle nested import
+				p.sql.Subqueries = append(p.sql.Subqueries, p.importStmt(t, true))
+
+				depth-- // ) consumed by import
+
+				//add placeholder that the compiler rewrites
+				p.synth(t, token.Placeholder)
+				t = p.next()
+				p.synth(t, token.RParen)
 			}
-
-			if !etl {
-				panic(p.errMsg(t, "illegal IMPORT subquery"))
-			}
-
-			//handle nested import
-			p.sql.Subqueries = append(p.sql.Subqueries, p.importStmt(t, true))
-
-			depth-- // ) consumed by import
-
-			//add placeholder that the compiler rewrites
-			p.synth(t, token.Placeholder)
-			t = p.next()
-			p.synth(t, token.RParen)
 
 		case token.Argument:
 			if !arg {
