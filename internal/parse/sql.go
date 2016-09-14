@@ -573,11 +573,6 @@ func (p *sqlParser) regular(t token.Value, depth int, subq, etl, arg bool) token
 			}
 
 			switch t.Canon {
-			default:
-				if t.Head(false) && !t.Head(true) {
-					panic(p.unexpected(t))
-				}
-
 			case "WITH":
 				t = p.with(t, true, etl, arg)
 
