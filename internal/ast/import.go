@@ -7,14 +7,14 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
-//Import [format] [header] [device] [table] [limit] [offset]
+//Import [temp] [table] [header] [device] [format] [frame] [limit] [offset]
 type Import struct {
 	token.Position
 	Temporary bool
-	Format    Format
+	Table     string
 	Header    []string
 	Device    Device
-	Table     string
+	Format    Format
 	Frame     string
 	Limit     int
 	Offset    int
@@ -48,9 +48,12 @@ func (i *Import) Print(to io.Writer) error {
 func (i *Import) print(w *writer.Writer) {
 	w.Str("IMPORT ")
 
-	if i.Format != nil {
-		_ = i.Format.Print(w)
-		w.Sp()
+	if i.Temporary {
+		w.Str("TEMPORARY ")
+	}
+
+	if len(i.Table) > 0 {
+		w.Str(i.Table).Sp()
 	}
 
 	if len(i.Header) > 0 {
@@ -65,8 +68,10 @@ func (i *Import) print(w *writer.Writer) {
 		w.Sp()
 	}
 
-	if len(i.Table) > 0 {
-		w.Str(" AS ").Str(i.Table).Sp()
+	if i.Format != nil {
+		w.Str("WITH ")
+		_ = i.Format.Print(w)
+		w.Sp()
 	}
 
 	if i.Frame != "" {

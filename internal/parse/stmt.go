@@ -2,6 +2,7 @@ package parse
 
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
+	"github.com/jimmyfrasche/etlite/internal/parse/internal/fmtname"
 	"github.com/jimmyfrasche/etlite/internal/parse/internal/interpolate"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
@@ -81,24 +82,28 @@ func (p *parser) assertStmt(t token.Value) *ast.Assert {
 	return a
 }
 
-//DISPLAY [format] [device]
+//DISPLAY [TO device] [AS format] [FRAME name]
 func (p *parser) displayStmt(t token.Value) *ast.Display {
 	d := &ast.Display{
 		Position: t.Position,
 	}
-	d.Format, t = p.formatExpr(p.next())
 	if t.Literal("TO") {
 		d.Device, t = p.deviceExpr(t)
 	}
 	d.Frame, t = p.frameExpr(t)
+	if t.Literal("AS") {
+		d.Format, t = p.formatExpr(p.next())
+	}
 	if t.Kind != token.Semicolon {
 		panic(p.expected(token.Semicolon, t))
 	}
 	return d
 }
 
-//IMPORT [format] [header] [device] [frame] [table] [limit] [offset]
+//IMPORT [TEMP] [table] [header] [FROM device] [WITH format] [FRAME name] [LIMIT n] [OFFSET n]
 func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
+	//TODO change return to (ast.Node, token.Value) so we can lift compound subqs
+	//XXX or just return node and pass the token to the sql parser?
 	i := &ast.Import{
 		Position: t.Position,
 		Header:   make([]string, 0, 16),
@@ -110,7 +115,16 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 		i.Temporary = true
 		t = p.next()
 	}
-	i.Format, t = p.formatExpr(t)
+
+	if !t.AnyLiteral("FROM", "WITH", "FRAME", "LIMIT", "OFFSET", "UNION", "INTERSECT", "EXCEPT") {
+		var name []token.Value
+		t, name = p.name(t)
+		s, err := fmtname.ToString(name)
+		if err != nil {
+			panic(err)
+		}
+		i.Name = s
+	}
 
 	//slurp header
 	if t.Kind == token.LParen {
@@ -136,37 +150,30 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 		i.Device, t = p.deviceExpr(t)
 	}
 
+	if t.Literal("WITH") {
+		i.Format, t = p.formatExpr(p.next())
+	}
+
 	i.Frame, t = p.frameExpr(t)
 
+	if t.Literal("LIMIT") {
+		i.Limit, t = p.int(p.next())
+	}
+
+	if t.Literal("OFFSET") {
+		i.Offset, t = p.int(p.next())
+	}
+
+	if t.AnyLiteral("UNION", "INTERSECT", "EXCEPT") {
+		panic(p.errMsg(t, "compound operators not supported by import subqueries, yet"))
+	}
 	end := token.Semicolon
 	if subquery {
 		end = token.RParen
 	}
-	if !t.Literal("LIMIT") && !t.Literal("OFFSET") && t.Kind != end {
-		//TODO allow qualified names, use name from new sql parser but turn it into a string:
-		//pull impl from compiler
-		_, ok := t.Unescape()
-		if !ok {
-			panic(p.expected("table name", t))
-		}
-		i.Table = t.Value
-		t = p.next()
-	}
-
-	if t.Literal("LIMIT") {
-		i.Limit = p.int(p.next())
-		t = p.next()
-	}
-
-	if t.Literal("OFFSET") {
-		i.Offset = p.int(p.next())
-		t = p.next()
-	}
-
 	if t.Kind != end {
 		panic(p.expected(end, t))
 	}
-
 	return i
 }
 

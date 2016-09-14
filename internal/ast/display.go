@@ -7,11 +7,11 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
-//Display [format] [device] [frame]
+//Display [device] [format] [frame]
 type Display struct {
 	token.Position
-	Format Format
 	Device Device
+	Format Format
 	Frame  string
 }
 
@@ -29,20 +29,20 @@ func (d *Display) Print(to io.Writer) error {
 	w := writer.New(to)
 	w.Str("DISPLAY ")
 
-	if d.Format != nil {
-		_ = d.Format.Print(w)
-		if d.Device != nil {
-			w.Sp()
-		}
-	}
-
 	if d.Device != nil {
 		w.Str("TO ")
 		_ = d.Device.Print(w)
+		w.Sp()
+	}
+
+	if d.Format != nil {
+		w.Str("AS ")
+		_ = d.Format.Print(w)
+		w.Sp()
 	}
 
 	if d.Frame != "" {
-		w.Sp().Str("FRAME ").Str(d.Frame)
+		w.Sp().Str(" FRAME ").Str(d.Frame)
 	}
 
 	return w.Err()
