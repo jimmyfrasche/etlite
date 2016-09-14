@@ -150,15 +150,18 @@ func (p *parser) delim(t token.Value) (rune, token.Value) {
 	return -1, t
 }
 
-func (p *parser) int(t token.Value) int {
+func (p *parser) int(t token.Value) (int, token.Value) {
 	if t.Kind != token.Literal {
 		panic(p.unexpected(t))
+	}
+	if t.Literal("-") {
+		t = p.expect(token.Literal)
 	}
 	i, err := strconv.Atoi(t.Value)
 	if err != nil {
 		panic(p.mkErr(t, err))
 	}
-	return i
+	return i, t
 }
 
 func (p *parser) quote(t token.Value) (rune, token.Value) {
