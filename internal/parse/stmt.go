@@ -90,13 +90,14 @@ func (p *parser) displayStmt(t token.Value) *ast.Display {
 	if t.Literal("TO") {
 		d.Device, t = p.deviceExpr(t)
 	}
+	d.Frame, t = p.frameExpr(t)
 	if t.Kind != token.Semicolon {
 		panic(p.expected(token.Semicolon, t))
 	}
 	return d
 }
 
-//IMPORT [format] [header] [device] [table] [limit] [offset]
+//IMPORT [format] [header] [device] [frame] [table] [limit] [offset]
 func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 	i := &ast.Import{
 		Position: t.Position,
@@ -131,16 +132,11 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 		}
 	}
 
-	if t.Literal("FRAME") {
-		t = p.expectLitOrStr()
-		s, _ := t.Unescape()
-		i.Frame = s
-		t = p.next()
-	}
-
 	if t.Literal("FROM") {
 		i.Device, t = p.deviceExpr(t)
 	}
+
+	i.Frame, t = p.frameExpr(t)
 
 	end := token.Semicolon
 	if subquery {

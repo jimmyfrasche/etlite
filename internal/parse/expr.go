@@ -39,6 +39,17 @@ func (p *parser) deviceExpr(toFrom token.Value) (ast.Device, token.Value) {
 	return d, p.next()
 }
 
+func (p *parser) frameExpr(t token.Value) (string, token.Value) {
+	var frame string
+	if t.Literal("FRAME") {
+		t = p.expectLitOrStr()
+		s, _ := t.Unescape()
+		frame = s
+		t = p.next()
+	}
+	return frame, t
+}
+
 func (p *parser) formatExpr(t token.Value) (ast.Format, token.Value) {
 	switch t.Canon {
 	case "JSON":
