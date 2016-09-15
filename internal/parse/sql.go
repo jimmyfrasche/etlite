@@ -559,12 +559,11 @@ func (p *sqlParser) regular(t token.Value, depth int, subq, etl, arg bool) token
 	for {
 		switch t.Kind {
 		case token.Semicolon:
-			if !subq {
-				p.push(t)
-				return t //leave on last token for trigger parser
-			} else {
+			if subq {
 				panic(p.unexpected(t))
 			}
+			p.push(t)
+			return t //leave on last token for trigger parser
 
 		case token.RParen:
 			depth--
