@@ -48,6 +48,7 @@ func New(db string, args, env []string) (*Machine, error) {
 			UseCRLF:  eol.Default,
 			NoHeader: true,
 		},
+		derivedTableName: "[-]",
 	}
 	//Init default dec/enc
 	if err := m.decoder.Init(m.input); err != nil {
