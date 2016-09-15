@@ -8,9 +8,6 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
-//TODO should recognize imports in compound selects (IMPORT ... UNION SELECT ... and vice versa) would just need to compile to subq import
-//just need to make sure no () are put around placeholder tokens
-
 type sqlParser struct {
 	*parser
 	sql *ast.SQL
@@ -41,6 +38,19 @@ func (p *sqlParser) synth(t token.Value, k token.Kind) {
 		Position: t.Position,
 		Kind:     k,
 	})
+}
+
+func (p *sqlParser) subImport(t token.Value, subq, etl bool) token.Value {
+	if !etl {
+		panic(p.errMsg(t, "illegal IMPORT subquery"))
+	}
+
+	//magic token for the compiler to rewrite
+	p.synth(t, token.Placeholder)
+	var n ast.Node
+	n, t = p.importStmt(t, subq, true, p.sql)
+	p.sql.Subqueries = append(p.sql.Subqueries, n.(*ast.Import))
+	return t
 }
 
 func digital(s string) bool {
@@ -407,7 +417,7 @@ loop:
 	case "IMPORT":
 		//TODO we could add a special FROM IMPORT here, with a little work
 		panic(p.errMsg(t, "INSERT ... IMPORT is currently unsupported"))
-	case "WITH": //XXX is this legal? Seems like it should be
+	case "WITH":
 		return p.with(t, subq, etl, arg)
 	case "VALUES", "SELECT":
 		return p.regular(t, 0, subq, etl, arg)
@@ -531,9 +541,12 @@ loop:
 		//instead, we insert a synthetic semicolon
 		p.synth(t, token.Semicolon)
 
-		i := p.importStmt(p.expectLit("IMPORT"), false)
+		//we can't use subImport since this is a special case
+		//TODO will be less of a special case when INSERT FROM is implemented
+		var n ast.Node
+		n, t = p.importStmt(p.expectLit("IMPORT"), false, false, nil)
 		p.sql.Name = name
-		p.sql.Subqueries = []*ast.Import{i}
+		p.sql.Subqueries = []*ast.Import{n.(*ast.Import)}
 	}
 }
 
@@ -577,19 +590,8 @@ func (p *sqlParser) regular(t token.Value, depth int, subq, etl, arg bool) token
 				t = p.with(t, true, etl, arg)
 
 			case "IMPORT":
-				if !etl {
-					panic(p.errMsg(t, "illegal IMPORT subquery"))
-				}
-
-				//handle nested import
-				p.sql.Subqueries = append(p.sql.Subqueries, p.importStmt(t, true))
-
-				depth-- // ) consumed by import
-
-				//add placeholder that the compiler rewrites
-				p.synth(t, token.Placeholder)
-				t = p.next()
-				p.synth(t, token.RParen)
+				//t is )
+				t = p.subImport(t, true, etl)
 			}
 
 		case token.Argument:
@@ -608,6 +610,31 @@ func (p *sqlParser) regular(t token.Value, depth int, subq, etl, arg bool) token
 			t = p.next()
 
 		default:
+			//check for compound operators
+			if t.AnyLiteral("UNION", "INTERSECT", "EXCEPT") {
+				p.push(t)
+				lastWasU := t.Literal("UNION")
+				t = p.expect(token.Literal)
+				if t.Literal("ALL") {
+					if !lastWasU {
+						panic(p.unexpected(t))
+					}
+					p.push(t)
+					t = p.expect(token.Literal)
+				}
+
+				switch t.Canon {
+				default:
+					panic(p.unexpected(t))
+
+				case "IMPORT":
+					t = p.subImport(t, subq, etl)
+					continue //need to recognize t next go round
+
+				case "SELECT", "VALUES":
+					//just continue along as we were
+				}
+			}
 			p.push(t)
 			t = p.next()
 		}

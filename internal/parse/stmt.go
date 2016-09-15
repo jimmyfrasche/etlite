@@ -20,7 +20,8 @@ func (p *parser) parseETL(t token.Value) ast.Node {
 	case "DISPLAY":
 		return p.displayStmt(t)
 	case "IMPORT":
-		return p.importStmt(t, false)
+		i, _ := p.importStmt(t, false, true, nil)
+		return i
 	default:
 		return p.parseSQL(t, false, true)
 	}
@@ -101,9 +102,7 @@ func (p *parser) displayStmt(t token.Value) *ast.Display {
 }
 
 //IMPORT [TEMP] [table] [header] [FROM device] [WITH format] [FRAME name] [LIMIT n] [OFFSET n]
-func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
-	//TODO change return to (ast.Node, token.Value) so we can lift compound subqs
-	//XXX or just return node and pass the token to the sql parser?
+func (p *parser) importStmt(t token.Value, subquery, compound bool, sql *ast.SQL) (ast.Node, token.Value) {
 	i := &ast.Import{
 		Position: t.Position,
 		Header:   make([]string, 0, 16),
@@ -165,8 +164,19 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 	}
 
 	if t.AnyLiteral("UNION", "INTERSECT", "EXCEPT") {
-		panic(p.errMsg(t, "compound operators not supported by import subqueries, yet"))
+		if !compound {
+			panic(p.unexpected(t))
+		}
+		//first term in a compound chain is import, lift result into sql
+		if sql == nil {
+			sql, t = p.liftSQL(t, i)
+			return sql, t
+		}
+		//otherwise we're already in the sql parser
+		//and we know we're not done parsing.
+		return i, t
 	}
+
 	end := token.Semicolon
 	if subquery {
 		end = token.RParen
@@ -174,7 +184,7 @@ func (p *parser) importStmt(t token.Value, subquery bool) *ast.Import {
 	if t.Kind != end {
 		panic(p.expected(end, t))
 	}
-	return i
+	return i, t
 }
 
 //Any random, regular SQL.
@@ -182,4 +192,12 @@ func (p *parser) parseSQL(t token.Value, subquery, allowETLsq bool) *ast.SQL {
 	sp := newSqlParser(p)
 	sp.top(t, subquery, allowETLsq)
 	return sp.sql
+}
+
+func (p *parser) liftSQL(t token.Value, i *ast.Import) (*ast.SQL, token.Value) {
+	sp := newSqlParser(p)
+	sp.synth(t, token.Placeholder) //for the import
+	sp.sql.Subqueries = append(sp.sql.Subqueries, i)
+	t = sp.regular(t, 0, false, true, true)
+	return sp.sql, t
 }
