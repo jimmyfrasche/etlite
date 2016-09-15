@@ -1,4 +1,5 @@
 *.db
+*.csv
 coverage.out
 
 ## From https://github.com/github/gitignore
