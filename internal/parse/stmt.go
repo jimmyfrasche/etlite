@@ -115,7 +115,7 @@ func (p *parser) importStmt(t token.Value, subquery, compound bool, sql *ast.SQL
 		t = p.next()
 	}
 
-	if !t.AnyLiteral("FROM", "WITH", "FRAME", "LIMIT", "OFFSET", "UNION", "INTERSECT", "EXCEPT") {
+	if t.Kind == token.Literal && !t.AnyLiteral("FROM", "WITH", "FRAME", "LIMIT", "OFFSET", "UNION", "INTERSECT", "EXCEPT") {
 		var name []token.Value
 		t, name = p.name(t)
 		s, err := fmtname.ToString(name)
@@ -134,14 +134,17 @@ func (p *parser) importStmt(t token.Value, subquery, compound bool, sql *ast.SQL
 				panic(p.unexpected(t))
 			}
 			i.Header = append(i.Header, f)
+
 			t = p.next()
 			if t.Kind == token.RParen {
 				t = p.next()
 				break
 			}
+
 			if !t.Literal(",") {
 				panic(p.unexpected(t))
 			}
+			t = p.next()
 		}
 	}
 
