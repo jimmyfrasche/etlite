@@ -268,13 +268,14 @@ func (p *sqlParser) with(t token.Value, subq, etl, arg bool) token.Value {
 	for {
 		t = p.expectLitOrStr() // name or possibly RECURSIVE if first time through
 
+		rec := false
 		if t.Literal("RECURSIVE") {
-			if first {
-				p.push(t)
-				t = p.expectLitOrStr()
-			} else {
+			if !first {
 				panic(p.unexpected(t))
 			}
+			p.push(t)
+			t = p.expectLitOrStr()
+			rec = true
 		}
 		first = false
 
@@ -299,9 +300,18 @@ func (p *sqlParser) with(t token.Value, subq, etl, arg bool) token.Value {
 		p.push(t)
 		t = p.expect(token.Literal)
 		if t.Literal("WITH") {
+			if rec {
+				panic(p.unexpected(t))
+			}
 			t = p.with(t, true, etl, arg)
 		} else {
-			t = p.regular(t, 1, true, etl, arg)
+			if !rec {
+				t = p.regular(t, 1, true, etl, arg)
+			} else {
+				//XXX would be safe if it were import union [noimports]
+				//XXX could special case that
+				t = p.regular(t, 1, true, false, arg)
+			}
 		}
 
 		t = p.expect(token.Literal)
@@ -310,6 +320,7 @@ func (p *sqlParser) with(t token.Value, subq, etl, arg bool) token.Value {
 		}
 	}
 
+	//XXX could allow etl IFF if part of compound operator?
 	switch t.Canon {
 	default:
 		panic(p.unexpected(t))
