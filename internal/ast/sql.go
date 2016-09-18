@@ -1,7 +1,6 @@
 package ast
 
 import (
-	"bytes"
 	"io"
 
 	"github.com/jimmyfrasche/etlite/internal/ast/internal/writer"
@@ -45,16 +44,6 @@ func (*SQL) node() {}
 //Pos reports the original position in input.
 func (s *SQL) Pos() token.Position {
 	return s.Tokens[0].Position
-}
-
-//ToString calls Print on a bytes.Buffer.
-//It is only safe to call after replacing argument and placeholder tokens.
-func (s *SQL) ToString() (string, error) {
-	var b bytes.Buffer
-	if err := s.Print(&b); err != nil {
-		return "", err
-	}
-	return b.String(), nil
 }
 
 //Print stringifies to a writer.
