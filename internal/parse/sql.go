@@ -129,8 +129,6 @@ func (p *sqlParser) top(t token.Value, subq, etl bool) {
 		panic(p.errMsg(t, "ANALYZE and EXPLAIN and ROLLBACK are not allowed"))
 	}
 
-	//Savepoint and release need a check to see they don't step on
-	//reserved savepoints
 	if t.AnyLiteral("SAVEPOINT", "RELEASE") {
 		if subq {
 			panic(p.unexpected(t))
@@ -139,9 +137,25 @@ func (p *sqlParser) top(t token.Value, subq, etl bool) {
 		return
 	}
 
+	if t.Literal("BEGIN") {
+		if subq {
+			panic(p.unexpected(t))
+		}
+		p.beginTransaction(t)
+		return
+	}
+
+	if t.AnyLiteral("END", "COMMIT") {
+		if subq {
+			panic(p.unexpected(t))
+		}
+		p.endTransaction(t)
+		return
+	}
+
 	//These are very simple and we just need to make sure nothing's obviously wrong
 	//while seeking ;
-	if t.AnyLiteral("BEGIN", "END", "VACCUM", "REINDEX") {
+	if t.AnyLiteral("VACCUM", "REINDEX", "PRAGMA") {
 		if subq {
 			panic(p.unexpected(t))
 		}
@@ -197,11 +211,13 @@ func (p *sqlParser) top(t token.Value, subq, etl bool) {
 	case "WITH":
 		_ = p.with(t, subq, etl, etl)
 	default:
+		p.sql.Kind = ast.Query
 		_ = p.regular(t, 0, subq, etl, etl)
 	}
 }
 
 func (p *sqlParser) alterTable(t token.Value) {
+	p.sql.Kind = ast.Exec
 	p.push(t)
 	t = p.expectLit("TABLE")
 	p.push(t)
@@ -225,6 +241,7 @@ func (p *sqlParser) alterTable(t token.Value) {
 }
 
 func (p *sqlParser) drop(t token.Value) {
+	p.sql.Kind = ast.Exec
 	p.push(t)
 	t = p.expect(token.Literal)
 	if !t.Literal("TABLE") {
@@ -240,6 +257,10 @@ func (p *sqlParser) drop(t token.Value) {
 }
 
 func (p *sqlParser) saverelease(t token.Value) {
+	p.sql.Kind = ast.Savepoint
+	if t.Literal("RELEASE") {
+		p.sql.Kind = ast.Release
+	}
 	p.push(t)
 	t = p.next()
 	s, ok := t.Unescape()
@@ -253,8 +274,37 @@ func (p *sqlParser) saverelease(t token.Value) {
 	p.expect(token.Semicolon)
 }
 
+func (p *sqlParser) beginTransaction(t token.Value) {
+	p.sql.Kind = ast.BeginTransaction
+	p.push(t)
+	t = p.next()
+	if t.AnyLiteral("DEFERRED", "IMMEDIATE", "EXCLUSIVE") {
+		p.push(t)
+		t = p.next()
+	}
+	if !t.Literal("TRANSACTION") {
+		panic(p.unexpected(t))
+	}
+	p.push(t)
+	t = p.expect(token.Semicolon)
+	p.push(t)
+}
+
+func (p *sqlParser) endTransaction(t token.Value) {
+	p.sql.Kind = ast.Commit
+	p.push(t)
+	t = p.expectLit("TRANSACTION")
+	p.push(t)
+	t = p.expect(token.Semicolon)
+	p.push(t)
+}
+
 //slurp simple statements until semicolon, making sure nothing untoward happens.
 func (p *sqlParser) slurp(t token.Value) {
+	p.sql.Kind = ast.Exec
+	if t.Literal("PRAGMA") {
+		p.sql.Kind = ast.Query //some pragmas output
+	}
 	for t.Kind != token.Semicolon {
 		p.push(t)
 		t = p.cantBe(token.Argument, token.LParen, token.RParen)
@@ -341,6 +391,7 @@ func (p *sqlParser) with(t token.Value, subq, etl, arg bool) token.Value {
 }
 
 func (p *sqlParser) delete(t token.Value, subq, etl, arg bool) token.Value {
+	p.sql.Kind = ast.Exec
 	if subq {
 		panic(p.unexpected(t))
 	}
@@ -352,6 +403,7 @@ func (p *sqlParser) delete(t token.Value, subq, etl, arg bool) token.Value {
 }
 
 func (p *sqlParser) update(t token.Value, subq, etl, arg bool) token.Value {
+	p.sql.Kind = ast.Exec
 	if subq {
 		panic(p.unexpected(t))
 	}
@@ -359,6 +411,7 @@ func (p *sqlParser) update(t token.Value, subq, etl, arg bool) token.Value {
 	t = p.expectLitOrStr()
 	if t.Literal("OR") {
 		p.push(t)
+		//TODO validate conflict method
 		t = p.expect(token.Literal) //ROLLBACK, etc.
 		p.push(t)
 		t = p.next()
@@ -371,6 +424,7 @@ func (p *sqlParser) update(t token.Value, subq, etl, arg bool) token.Value {
 }
 
 func (p *sqlParser) insert(t token.Value, subq, etl, arg bool) token.Value {
+	p.sql.Kind = ast.Exec
 	if subq {
 		panic(p.unexpected(t))
 	}
@@ -383,6 +437,7 @@ func (p *sqlParser) insert(t token.Value, subq, etl, arg bool) token.Value {
 			panic(p.unexpected(t))
 		}
 		p.push(t)
+		//TODO validate conflict method
 		t = p.expect(token.Literal) //ROLLBACK, etc.
 		p.push(t)
 		t = p.next()
@@ -392,7 +447,7 @@ func (p *sqlParser) insert(t token.Value, subq, etl, arg bool) token.Value {
 	}
 	p.push(t)
 
-	t = p.tmpCheck(p.next())
+	t = p.tmpCheck(p.next()) //TODO store name after compiler updated
 	if t.Kind != token.LParen {
 		panic(p.unexpected(t))
 	}
@@ -427,6 +482,7 @@ loop:
 		return t //this isn't used anywhere, but needed for symmetry
 	case "IMPORT":
 		//TODO we could add a special FROM IMPORT here, with a little work
+		p.sql.Kind = ast.InsertFrom
 		panic(p.errMsg(t, "INSERT ... IMPORT is currently unsupported"))
 	case "WITH":
 		return p.with(t, subq, etl, arg)
@@ -438,6 +494,7 @@ loop:
 //trigger handles triggers which have a special structure
 //requiring them to be handled separately.
 func (p *sqlParser) trigger(t token.Value) {
+	p.sql.Kind = ast.Exec
 	//skip till begin
 	for !t.Literal("BEGIN") {
 		p.push(t)
@@ -479,6 +536,7 @@ func (p *sqlParser) trigger(t token.Value) {
 
 //table parses create table statements to handle CREATE TABLE FROM special form.
 func (p *sqlParser) table(t token.Value, temp bool) {
+	p.sql.Kind = ast.Exec
 	p.push(t)
 	t = p.maybeRun(p.next(), "IF", "NOT", "EXISTS")
 
@@ -505,6 +563,8 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 	}
 
 	if t.Literal("AS") {
+		//let the compiler know subquery imports have to be handled gingerly
+		p.sql.Kind = ast.CreateTableAs
 		p.push(t)
 		_ = p.regular(p.next(), 0, false, false, true)
 		//XXX is this fair? safe to do subimport in create table?
@@ -548,6 +608,7 @@ loop:
 		p.push(t)
 		return
 	case t.Literal("FROM"):
+		p.sql.Kind = ast.CreateTableFrom
 		//we do not push "FROM" since this is fake syntax
 		//instead, we insert a synthetic semicolon
 		p.synth(t, token.Semicolon)

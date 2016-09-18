@@ -9,11 +9,29 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
+//go:generate stringer -type=Kind
+
+type Kind int
+
+const (
+	Invalid Kind = iota
+	Query
+	Exec
+	CreateTableFrom
+	CreateTableAs
+	InsertFrom
+	Savepoint
+	Release
+	BeginTransaction
+	Commit
+)
+
 //A SQL statement or subquery
 //(not including outer parentheses or final semicolon).
 //
 //It is up to a third party to rewrite subqueries to contain only valid sql
 type SQL struct {
+	Kind       Kind
 	Subqueries []*Import
 	Name       []token.Value //only set if CREATE TABLE ... FROM IMPORT
 	Tokens     []token.Value
@@ -50,6 +68,9 @@ func (s *SQL) ToString() (string, error) {
 
 //Print stringifies to a writer.
 func (s *SQL) Print(to io.Writer) error {
+	if s.Kind == Invalid {
+		return errint.New("Improperly constructed SQL")
+	}
 	w := writer.New(to)
 
 	//To avoid handling precedence and such we do not handle unary + or - when lexing
