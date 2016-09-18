@@ -42,16 +42,6 @@ var _ Node = (*SQL)(nil)
 
 func (*SQL) node() {}
 
-func (*SQL) int() {}
-
-func (*SQL) rune() {}
-
-func (*SQL) null() {}
-
-func (*SQL) str() {}
-
-func (*SQL) bool() {}
-
 //Pos reports the original position in input.
 func (s *SQL) Pos() token.Position {
 	return s.Tokens[0].Position
