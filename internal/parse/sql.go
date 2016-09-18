@@ -566,12 +566,7 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 		//let the compiler know subquery imports have to be handled gingerly
 		p.sql.Kind = ast.CreateTableAs
 		p.push(t)
-		_ = p.regular(p.next(), 0, false, false, true)
-		//XXX is this fair? safe to do subimport in create table?
-		//XXX it wouldn't respect the usual rules and if it failed
-		//XXX the table wouldn't exist, unlike with import statement. Must think.
-		//XXX note in ast, special case compiler to treat like normal subquery import
-		//XXX but release savepoint before create and drop tables after.
+		_ = p.regular(p.next(), 0, false, true, true)
 		return
 	}
 

@@ -5,82 +5,81 @@ import (
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
-	"github.com/jimmyfrasche/etlite/internal/token"
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
-func tblFrom(nm []token.Value) string {
-	var s string
-	//we assume the escaping, if any, has been applied
-	for _, t := range nm {
-		s += t.Value
-	}
-	return s
-}
-
 func (c *compiler) compileSQL(s *ast.SQL) {
-
-	//CREATE TABLE ... FROM IMPORT is a special case
-	if len(s.Name) > 0 {
-		if ln := len(s.Name); ln == 2 || ln > 3 {
-			panic(errint.Newf("table name in CREATE TABLE FROM IMPORT must have 1 or 3 tokens, got %d", ln))
+	switch s.Kind {
+	default:
+		panic(errint.Newf("got unknown or invalid sql kind %d", s.Kind))
+	case ast.Savepoint, ast.Release, ast.BeginTransaction, ast.Commit:
+		if ls := len(s.Subqueries); ls != 0 {
+			panic(errint.Newf("%s cannot have etl subqueries, found %d", s.Kind, ls))
 		}
-		if len(s.Subqueries) != 1 {
-			panic(errint.Newf("found %d imports in CREATE TABLE FROM IMPORT but should only have 1", len(s.Subqueries)))
+		c.compileTransactor(s)
+	case ast.CreateTableFrom, ast.CreateTableAs, ast.InsertFrom:
+		if ls := len(s.Subqueries); ls != 1 {
+			panic(errint.Newf("%s must have exactly 1 etl subquery, found %d", s.Kind, ls))
 		}
+	case ast.Exec, ast.Query:
+		//can have any number
+	}
 
-		nm := tblFrom(s.Name)
-
-		ddl, err := s.ToString()
-		if err != nil {
-			panic(err)
-		}
-
+	switch s.Kind {
+	case ast.CreateTableFrom, ast.InsertFrom: //TODO should collect columns in parser
+		nm := fmtName(s.Name)
 		i := s.Subqueries[0]
-		c.compileCreateTableAsImport(nm, ddl, i)
+		rewrite(c.buf, s, nil, false)
+		ddl := c.bufStr()
+		if s.Kind == ast.CreateTableFrom {
+			//TODO when we factor out insert stuff push create table then custom insert importer
+			c.compileCreateTableAsImport(nm, ddl, i)
+		} else {
+			//TODO this
+			panic("unimplemented")
+		}
 		return
 	}
 
-	//regular sql, may or may not have etl subqueries
-
-	//if etl subquery, handle set up
-	var tbls []string
+	var tables []string
 	if len(s.Subqueries) > 0 {
 		c.push(virt.Savepoint())
 
 		//compile the imports
-		tbls = make([]string, len(s.Subqueries))
+		tables = make([]string, len(s.Subqueries))
 		for i, imp := range s.Subqueries {
-			tbls[i] = "[" + strconv.Itoa(i) + "]"
-			c.compileSubImport(imp, tbls[i])
+			tables[i] = "[" + strconv.Itoa(i) + "]"
+			c.compileSubImport(imp, tables[i])
 		}
-
-		//rewrite the placeholders to select from our well named tables.
-		i := 0
-		for j, t := range s.Tokens {
-			if t.Kind == token.Placeholder {
-				s.Tokens[j] = token.Value{
-					Kind:  token.Literal,
-					Value: "select * from temp." + tbls[i],
-				}
-				i++
-			}
-		}
-		if i != len(s.Subqueries) {
-			panic(errint.Newf("expected %d placeholders in subquery got %d:\n%v", len(s.Subqueries), i, s))
-		}
-
 	}
 
-	q, err := s.ToString()
-	if err != nil {
-		panic(err)
-	}
-	c.push(virt.Query(q))
+	rewrite(c.buf, s, tables, true)
+	q := c.bufStr()
 
-	//if this was an etl subquery, handle teardown
-	if len(s.Subqueries) > 0 {
-		c.push(virt.DropTempTables(tbls))
+	switch s.Kind {
+	case ast.Exec:
+		c.push(virt.Exec(q))
+	case ast.CreateTableAs:
+		//need to release the savepoint before the query
+		//so as to not interfere with the creation of the table
 		c.push(virt.Release())
+		fallthrough
+	case ast.Query:
+		c.push(virt.Query(q))
 	}
+
+	if len(tables) > 0 {
+		c.push(virt.DropTempTables(tables))
+		if s.Kind != ast.CreateTableAs {
+			c.push(virt.Release())
+		}
+	}
+	return
+}
+
+func (c *compiler) compileTransactor(s *ast.SQL) {
+	panic("TODO")
+	rewrite(c.buf, s, nil, false)
+	q := c.bufStr()
+	c.push(virt.Query(q)) //TODO need special cases for this so we can track open transactions
 }

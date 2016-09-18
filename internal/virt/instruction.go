@@ -138,3 +138,9 @@ func DropTempTables(names []string) Instruction {
 		return nil
 	}
 }
+
+func Exec(q string) Instruction {
+	return func(m *Machine) error {
+		return m.exec(q) //TODO fastpath this in driver
+	}
+}

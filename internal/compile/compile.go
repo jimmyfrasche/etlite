@@ -3,6 +3,7 @@
 package compile
 
 import (
+	"bytes"
 	"runtime"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
@@ -14,10 +15,17 @@ import (
 type compiler struct {
 	usedStdin bool
 	inst      []virt.Instruction
+	buf       *bytes.Buffer
 }
 
 func (c *compiler) push(is ...virt.Instruction) {
 	c.inst = append(c.inst, is...)
+}
+
+func (c *compiler) bufStr() string {
+	s := c.buf.String()
+	c.buf.Reset()
+	return s
 }
 
 //Nodes collects and compiles the nodes on from into instructions for our VM.
@@ -25,6 +33,7 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 	c := &compiler{
 		inst:      make([]virt.Instruction, 0, 128),
 		usedStdin: usedStdin,
+		buf:       &bytes.Buffer{},
 	}
 
 	defer func() {
