@@ -456,6 +456,7 @@ func (p *sqlParser) insert(t token.Value, subq, etl, arg bool) token.Value {
 loop:
 	for {
 		t = p.expectLitOrStr()
+		p.sql.Cols = append(p.sql.Cols, t)
 		p.push(t)
 		t = p.next()
 		switch {
@@ -576,24 +577,8 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 		panic(p.unexpected(t))
 	}
 	p.push(t)
-	depth := 1
-loop:
-	for {
-		t = p.cantBe(token.Semicolon, token.Argument)
-		switch t.Kind {
-		case token.LParen:
-			depth++
-		case token.RParen:
-			depth--
-			if depth == 0 {
-				p.push(t)
-				break loop
-			}
-		case token.Literal:
-			if t.Head(false) {
-				panic(p.unexpected(t))
-			}
-		}
+	for t.Kind != token.RParen {
+		t = p.colDef()
 		p.push(t)
 	}
 
@@ -614,6 +599,33 @@ loop:
 		n, t = p.importStmt(p.expectLit("IMPORT"), false, false, nil)
 		p.sql.Name = name
 		p.sql.Subqueries = []*ast.Import{n.(*ast.Import)}
+	}
+}
+
+func (p *sqlParser) colDef() token.Value {
+	t := p.expectLitOrStr()
+	p.push(t)
+	//don't store table constraints, only interested in column names
+	if !t.AnyLiteral("CONSTRAINT", "PRIMARY", "UNIQUE", "CHECK", "FOREIGN") {
+		p.sql.Cols = append(p.sql.Cols, t)
+	}
+	depth := 0
+	for {
+		t = p.cantBe(token.Semicolon, token.Argument)
+		switch t.Kind {
+		case token.LParen:
+			depth++
+		case token.RParen:
+			depth--
+			if depth == -1 { //ran out of our () and hit ) from table def
+				return t
+			}
+		case token.Literal:
+			if depth == 0 && t.Canon == "," {
+				return t
+			}
+		}
+		p.push(t)
 	}
 }
 

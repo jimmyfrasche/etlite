@@ -34,6 +34,7 @@ type SQL struct {
 	Kind       Kind
 	Subqueries []*Import
 	Name       []token.Value //only set if CREATE TABLE ... FROM IMPORT
+	Cols       []token.Value //recorded for INSERT
 	Tokens     []token.Value
 }
 
