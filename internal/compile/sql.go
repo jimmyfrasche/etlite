@@ -26,7 +26,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	}
 
 	switch s.Kind {
-	case ast.CreateTableFrom, ast.InsertFrom: //TODO should collect columns in parser
+	case ast.CreateTableFrom, ast.InsertFrom:
 		nm := fmtName(s.Name)
 		i := s.Subqueries[0]
 		rewrite(c.buf, s, nil, false)
