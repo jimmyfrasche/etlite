@@ -183,6 +183,7 @@ func (p *sqlParser) top(t token.Value, subq, etl bool) {
 		if subq {
 			panic(p.unexpected(t))
 		}
+		p.sql.Kind = ast.Exec //overridden as necessary
 		p.push(t)
 		t = p.next()
 		temp := false
@@ -191,13 +192,20 @@ func (p *sqlParser) top(t token.Value, subq, etl bool) {
 			t = p.next()
 			temp = true
 		}
-		if t.Literal("TRIGGER") {
+		switch t.Canon {
+		case "TRIGGER":
 			p.trigger(t)
-			return
-		} else if t.Literal("TABLE") {
+		case "TABLE":
 			p.table(t, temp)
-			return
+		case "VIRTUAL", "VIEW":
+			_ = p.regular(t, 0, false, false, false)
+		case "UNIQUE", "INDEX":
+			if temp {
+				panic(p.unexpected(t))
+			}
+			_ = p.regular(t, 0, false, false, false)
 		}
+		return
 	}
 
 	//the stutter is not an accident: except for some special cases these are the same
