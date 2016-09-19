@@ -402,6 +402,12 @@ func (p *sqlParser) delete(t token.Value, subq, etl, arg bool) token.Value {
 	return p.regular(t, 0, subq, etl, arg)
 }
 
+func (p *sqlParser) conflictMethod(t token.Value) {
+	if !t.AnyLiteral("REPLACE", "ROLLBACK", "ABORT", "FAIL", "IGNORE") {
+		panic(p.unexpected(t))
+	}
+}
+
 func (p *sqlParser) update(t token.Value, subq, etl, arg bool) token.Value {
 	p.sql.Kind = ast.Exec
 	if subq {
@@ -411,8 +417,8 @@ func (p *sqlParser) update(t token.Value, subq, etl, arg bool) token.Value {
 	t = p.expectLitOrStr()
 	if t.Literal("OR") {
 		p.push(t)
-		//TODO validate conflict method
 		t = p.expect(token.Literal) //ROLLBACK, etc.
+		p.conflictMethod(t)
 		p.push(t)
 		t = p.next()
 	}
@@ -437,8 +443,8 @@ func (p *sqlParser) insert(t token.Value, subq, etl, arg bool) token.Value {
 			panic(p.unexpected(t))
 		}
 		p.push(t)
-		//TODO validate conflict method
 		t = p.expect(token.Literal) //ROLLBACK, etc.
+		p.conflictMethod(t)
 		p.push(t)
 		t = p.next()
 	}
