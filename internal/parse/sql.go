@@ -62,6 +62,12 @@ func digital(s string) bool {
 	return true
 }
 
+func (p *sqlParser) name(t token.Value) (token.Value, []token.Value) {
+	t, name := p.parser.name(t)
+	p.sql.Name = name
+	return t, name
+}
+
 func (p *sqlParser) chkDigTmp(name []token.Value) {
 	if len(name) == 3 {
 		s, _ := name[0].Unescape()
@@ -461,7 +467,7 @@ func (p *sqlParser) insert(t token.Value, subq, etl, arg bool) token.Value {
 	}
 	p.push(t)
 
-	t = p.tmpCheck(p.next()) //TODO store name after compiler updated
+	t = p.tmpCheck(p.next())
 	if t.Kind != token.LParen {
 		panic(p.unexpected(t))
 	}
