@@ -8,6 +8,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/format/rawfmt"
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/savepoint"
 	"github.com/jimmyfrasche/etlite/internal/virt/internal/sysdb"
 )
 
@@ -24,6 +25,8 @@ type Machine struct {
 	savepointStmt, releaseStmt *driver.Stmt
 
 	eframe, derivedTableName string
+
+	stack *savepoint.Stack
 }
 
 //New creates and prepares an execution context.
@@ -49,6 +52,7 @@ func New(db string, args, env []string) (*Machine, error) {
 			NoHeader: true,
 		},
 		derivedTableName: "[-]",
+		stack:            savepoint.New(),
 	}
 	//Init default dec/enc
 	if err := m.decoder.Init(m.input); err != nil {

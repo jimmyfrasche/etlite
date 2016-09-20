@@ -87,47 +87,37 @@ func (c *compiler) compileTransactor(s *ast.SQL) {
 		panic(errint.New("no savepoint name provided by parser"))
 	}
 
+	rewrite(c.buf, s, nil, false)
+	q := c.bufStr()
+
 	//normalize name
 	name := strings.ToLower(fmtName(s.Name))
 
 	//make sure these stack correctly
 	switch s.Kind {
+	default:
+		panic(errint.Newf("no valid transaction type, got %d", s.Kind))
+
 	case ast.BeginTransaction:
-		if len(c.save) > 0 {
-			panic(errusr.New(s.Pos(), "attempting to start transaction with open savepoints"))
+		if err := c.stack.Begin(); err != nil {
+			panic(errusr.Wrap(s.Pos(), err))
 		}
-		if c.inTransaction {
-			panic(errusr.New(s.Pos(), "attempting to start transaction in transaction"))
-		}
+		c.push(virt.BeginTransaction(q))
 
 	case ast.Commit:
-		if !c.inTransaction {
-			panic(errusr.New(s.Pos(), "no open transaction to commit"))
+		if err := c.stack.End(); err != nil {
+			panic(errusr.Wrap(s.Pos(), err))
 		}
-		c.save = c.save[:0]
-		c.inTransaction = false
+		c.push(virt.CommitTransaction(q))
 
 	case ast.Savepoint:
-		c.save = append(c.save, name)
+		c.stack.Savepoint(name)
+		c.push(virt.UserSavepoint(name, q))
 
 	case ast.Release:
-		p := c.saveRFind(name)
-		if p < 0 {
-			panic(errusr.Newf(s.Pos(), "attempting to release unknown savepoint %s", name))
+		if err := c.stack.Release(name); err != nil {
+			panic(errusr.Wrap(s.Pos(), err))
 		}
-		c.save = c.save[:len(c.save)-p]
+		c.push(virt.UserRelease(name, q))
 	}
-
-	rewrite(c.buf, s, nil, false)
-	q := c.bufStr()
-	c.push(virt.Exec(q)) //TODO pass name to compiler so it can ensure proper rollback
-}
-
-func (c *compiler) saveRFind(name string) int {
-	for i := len(c.save) - 1; i >= 0; i-- {
-		if c.save[i] == name {
-			return i
-		}
-	}
-	return -1
 }

@@ -9,15 +9,15 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/internal/savepoint"
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
 type compiler struct {
-	usedStdin     bool
-	inst          []virt.Instruction
-	buf           *bytes.Buffer
-	save          []string
-	inTransaction bool
+	usedStdin bool
+	inst      []virt.Instruction
+	buf       *bytes.Buffer
+	stack     *savepoint.Stack
 }
 
 func (c *compiler) push(is ...virt.Instruction) {
@@ -36,6 +36,7 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 		inst:      make([]virt.Instruction, 0, 128),
 		usedStdin: usedStdin,
 		buf:       &bytes.Buffer{},
+		stack:     savepoint.New(),
 	}
 
 	defer func() {
@@ -83,10 +84,10 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 		firstStatement = false
 	}
 
-	if c.inTransaction {
+	if c.stack.InTransaction() {
 		c.push(virt.Exec("END TRANSACTION;"))
-	} else if len(c.save) > 0 {
-		c.push(virt.Exec("RELEASE " + c.save[0] + ";"))
+	} else if c.stack.HasSavepoints() {
+		c.push(virt.Exec("RELEASE " + c.stack.Top() + ";"))
 	}
 
 	return db, c.inst, nil

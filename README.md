@@ -38,7 +38,7 @@ ASSERT ends the script if the scalar subquery returns anything other than 1 and 
 
 Otherwise, all SQLite is valid except for
 - EXPLAIN/ANALYZE
-- ROLLBACK (handled automatically (or implicitly but TBD automatically))
+- ROLLBACK (handled automatically)
 - placeholders (except @ which is handled differently as noted above)
 
 SQLite is compiled with ICU/Rtree/FTS5/json/dbstat/soundex, a regexp function that links to PCRE, and the series, nextchar, and spellfix add-ons from ext/misc in the SQLite repo.

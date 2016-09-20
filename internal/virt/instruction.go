@@ -8,6 +8,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/device/file"
 	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/format"
+	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
@@ -19,6 +20,10 @@ type Instruction func(*Machine) error
 func (m *Machine) Run(is []Instruction) error {
 	for _, i := range is {
 		if err := i(m); err != nil {
+			if m.stack.InTransaction() || m.stack.HasSavepoints() {
+				//TODO handle SQLITE_BUSY somewhere
+				_ = m.exec("ROLLBACK;")
+			}
 			return err
 		}
 	}
@@ -142,5 +147,39 @@ func DropTempTables(names []string) Instruction {
 func Exec(q string) Instruction {
 	return func(m *Machine) error {
 		return m.exec(q) //TODO fastpath this in driver
+	}
+}
+
+func BeginTransaction(q string) Instruction {
+	return func(m *Machine) error {
+		if err := m.stack.Begin(); err != nil {
+			return errint.Wrap(err)
+		}
+		return m.exec(q)
+	}
+}
+
+func CommitTransaction(q string) Instruction {
+	return func(m *Machine) error {
+		if err := m.stack.End(); err != nil {
+			return errint.Wrap(err)
+		}
+		return m.exec(q)
+	}
+}
+
+func UserSavepoint(name, q string) Instruction {
+	return func(m *Machine) error {
+		m.stack.Savepoint(name)
+		return m.exec(q)
+	}
+}
+
+func UserRelease(name, q string) Instruction {
+	return func(m *Machine) error {
+		if err := m.stack.Release(name); err != nil {
+			return errint.Wrap(err)
+		}
+		return m.exec(q)
 	}
 }
