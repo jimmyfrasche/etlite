@@ -414,7 +414,7 @@ func (p *sqlParser) with(t token.Value, subq, etl, arg bool) token.Value {
 		return p.update(t, subq, etl, arg)
 	case "DELETE":
 		return p.delete(t, subq, etl, arg)
-	case "SELECT":
+	case "SELECT", "VALUES":
 		depth := 0
 		if subq {
 			depth++
