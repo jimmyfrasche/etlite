@@ -9,6 +9,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/internal/eol"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/savepoint"
+	"github.com/jimmyfrasche/etlite/internal/token"
 	"github.com/jimmyfrasche/etlite/internal/virt/internal/sysdb"
 )
 
@@ -27,6 +28,7 @@ type Machine struct {
 	eframe, derivedTableName string
 
 	stack *savepoint.Stack
+	pos   token.Position
 }
 
 //New creates and prepares an execution context.

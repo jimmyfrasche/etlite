@@ -9,6 +9,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
@@ -24,7 +25,7 @@ func (m *Machine) Run(is []Instruction) error {
 				//TODO handle SQLITE_BUSY somewhere
 				_ = m.exec("ROLLBACK;")
 			}
-			return err
+			return errusr.Wrap(m.pos, err)
 		}
 	}
 	return nil
@@ -52,6 +53,13 @@ func Assert(pos token.Position, msg, query string) Instruction {
 				msg: msg,
 			}
 		}
+		return nil
+	}
+}
+
+func ErrPos(p token.Position) Instruction {
+	return func(m *Machine) error {
+		m.pos = p
 		return nil
 	}
 }
