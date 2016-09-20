@@ -55,6 +55,7 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 
 	firstStatement := true
 	for n := range from {
+		c.push(virt.ErrPos(n.Pos()))
 		switch n := n.(type) {
 		default:
 			return "", nil, errint.Newf("internal error: unknown node type %T", n)

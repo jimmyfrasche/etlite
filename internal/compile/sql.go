@@ -52,6 +52,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 		for i, imp := range s.Subqueries {
 			tables[i] = "[" + strconv.Itoa(i) + "]"
 			c.compileSubImport(imp, tables[i])
+			c.push(virt.ErrPos(s.Pos()))
 		}
 	}
 
