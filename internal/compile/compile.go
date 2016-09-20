@@ -13,9 +13,11 @@ import (
 )
 
 type compiler struct {
-	usedStdin bool
-	inst      []virt.Instruction
-	buf       *bytes.Buffer
+	usedStdin     bool
+	inst          []virt.Instruction
+	buf           *bytes.Buffer
+	save          []string
+	inTransaction bool
 }
 
 func (c *compiler) push(is ...virt.Instruction) {
@@ -79,6 +81,12 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 		}
 
 		firstStatement = false
+	}
+
+	if c.inTransaction {
+		c.push(virt.Exec("END TRANSACTION;"))
+	} else if len(c.save) > 0 {
+		c.push(virt.Exec("RELEASE " + c.save[0] + ";"))
 	}
 
 	return db, c.inst, nil

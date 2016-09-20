@@ -135,11 +135,19 @@ func (p *sqlParser) top(t token.Value, subq, etl bool) {
 		panic(p.errMsg(t, "ANALYZE and EXPLAIN and ROLLBACK are not allowed"))
 	}
 
-	if t.AnyLiteral("SAVEPOINT", "RELEASE") {
+	if t.Literal("SAVEPOINT") {
 		if subq {
 			panic(p.unexpected(t))
 		}
-		p.saverelease(t)
+		p.savepoint(t)
+		return
+	}
+
+	if t.Literal("RELEASE") {
+		if subq {
+			panic(p.unexpected(t))
+		}
+		p.release(t)
 		return
 	}
 
@@ -270,11 +278,8 @@ func (p *sqlParser) drop(t token.Value) {
 	p.push(t)
 }
 
-func (p *sqlParser) saverelease(t token.Value) {
+func (p *sqlParser) savepoint(t token.Value) {
 	p.sql.Kind = ast.Savepoint
-	if t.Literal("RELEASE") {
-		p.sql.Kind = ast.Release
-	}
 	p.push(t)
 	t = p.next()
 	s, ok := t.Unescape()
@@ -284,6 +289,20 @@ func (p *sqlParser) saverelease(t token.Value) {
 	if digital(s) {
 		panic(p.errMsg(t, "digital savepoint names are reserved by etlite"))
 	}
+	p.sql.Name = []token.Value{t}
+	p.push(t)
+	p.expect(token.Semicolon)
+}
+
+func (p *sqlParser) release(t token.Value) {
+	p.sql.Kind = ast.Release
+	p.push(t)
+	t = p.expectLitOrStr()
+	if t.Literal("SAVEPOINT") {
+		p.push(t)
+		t = p.expectLitOrStr()
+	}
+	p.sql.Name = []token.Value{t}
 	p.push(t)
 	p.expect(token.Semicolon)
 }

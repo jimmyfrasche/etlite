@@ -2,9 +2,11 @@ package compile
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
@@ -78,8 +80,54 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 }
 
 func (c *compiler) compileTransactor(s *ast.SQL) {
-	panic("TODO")
+	if len(s.Name) > 1 {
+		panic(errint.Newf("impossible savepoint name %#v", s.Name))
+	}
+	if (s.Kind == ast.Savepoint || s.Kind == ast.Release) && len(s.Name) == 0 {
+		panic(errint.New("no savepoint name provided by parser"))
+	}
+
+	//normalize name
+	name := strings.ToLower(fmtName(s.Name))
+
+	//make sure these stack correctly
+	switch s.Kind {
+	case ast.BeginTransaction:
+		if len(c.save) > 0 {
+			panic(errusr.New(s.Pos(), "attempting to start transaction with open savepoints"))
+		}
+		if c.inTransaction {
+			panic(errusr.New(s.Pos(), "attempting to start transaction in transaction"))
+		}
+
+	case ast.Commit:
+		if !c.inTransaction {
+			panic(errusr.New(s.Pos(), "no open transaction to commit"))
+		}
+		c.save = c.save[:0]
+		c.inTransaction = false
+
+	case ast.Savepoint:
+		c.save = append(c.save, name)
+
+	case ast.Release:
+		p := c.saveRFind(name)
+		if p < 0 {
+			panic(errusr.Newf(s.Pos(), "attempting to release unknown savepoint %s", name))
+		}
+		c.save = c.save[:len(c.save)-p]
+	}
+
 	rewrite(c.buf, s, nil, false)
 	q := c.bufStr()
-	c.push(virt.Query(q)) //TODO need special cases for this so we can track open transactions
+	c.push(virt.Exec(q)) //TODO pass name to compiler so it can ensure proper rollback
+}
+
+func (c *compiler) saveRFind(name string) int {
+	for i := len(c.save) - 1; i >= 0; i-- {
+		if c.save[i] == name {
+			return i
+		}
+	}
+	return -1
 }
