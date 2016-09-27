@@ -22,13 +22,14 @@ func (m *Machine) Run(is []Instruction) error {
 	for _, i := range is {
 		if err := i(m); err != nil {
 			if m.stack.Open() {
+				_ = m.drain(true)
 				//TODO handle SQLITE_BUSY somewhere
 				_ = m.exec("ROLLBACK;")
 			}
 			return errusr.Wrap(m.pos, err)
 		}
 	}
-	return nil
+	return m.drain(false)
 }
 
 type assertionError struct {
@@ -172,6 +173,9 @@ func CommitTransaction(q string) Instruction {
 		if err := m.stack.End(); err != nil {
 			return errint.Wrap(err)
 		}
+		if err := m.drain(false); err != nil {
+			return err
+		}
 		return m.exec(q)
 	}
 }
@@ -187,6 +191,9 @@ func UserRelease(name, q string) Instruction {
 	return func(m *Machine) error {
 		if err := m.stack.Release(name); err != nil {
 			return errint.Wrap(err)
+		}
+		if err := m.drain(false); err != nil {
+			return err
 		}
 		return m.exec(q)
 	}

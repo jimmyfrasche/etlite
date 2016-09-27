@@ -29,6 +29,7 @@ type Machine struct {
 
 	stack *savepoint.Stack
 	pos   token.Position
+	devs  []device.Writer
 }
 
 //New creates and prepares an execution context.
@@ -124,12 +125,32 @@ func (m *Machine) setOutput(o device.Writer) error {
 		return err
 	}
 
-	if err := m.output.Close(); err != nil {
-		return err
+	if !m.stack.Open() {
+		if err := m.output.Close(); err != nil {
+			return err
+		}
+	} else {
+		m.devs = append(m.devs, m.output)
 	}
 	m.output = o
 
 	return m.encoder.Init(m.output)
+}
+
+func (m *Machine) drain(failed bool) (firstErr error) {
+	//TODO really need a log for tracing, especially in errors that matter
+	//to users like this
+	for i, d := range m.devs {
+		if failed {
+			d.Cancel()
+		}
+		if err := m.output.Close(); err != nil && firstErr == nil {
+			failed, firstErr = true, err
+		}
+		m.devs[i] = nil
+	}
+	m.devs = m.devs[:0]
+	return firstErr
 }
 
 func (m *Machine) setInput(in device.Reader, derivedTableName string) error {
