@@ -21,7 +21,7 @@ type Instruction func(*Machine) error
 func (m *Machine) Run(is []Instruction) error {
 	for _, i := range is {
 		if err := i(m); err != nil {
-			if m.stack.InTransaction() || m.stack.HasSavepoints() {
+			if m.stack.Open() {
 				//TODO handle SQLITE_BUSY somewhere
 				_ = m.exec("ROLLBACK;")
 			}

@@ -27,6 +27,11 @@ func (s *Stack) HasSavepoints() bool {
 	return len(s.s) > 0
 }
 
+//Open reports whether InTransaction or HasSavepoints.
+func (s *Stack) Open() bool {
+	return s.InTransaction() || s.HasSavepoints()
+}
+
 //Top returns the outermost savepoint name, if HasSavepoints.
 func (s *Stack) Top() string {
 	return s.s[0]
