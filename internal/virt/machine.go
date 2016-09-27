@@ -150,6 +150,9 @@ func (m *Machine) drain(failed bool) (firstErr error) {
 		m.devs[i] = nil
 	}
 	m.devs = m.devs[:0]
+	if failed {
+		m.output.Cancel()
+	}
 	return firstErr
 }
 
