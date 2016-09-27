@@ -1,6 +1,7 @@
 package virt
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -15,19 +16,30 @@ import (
 )
 
 //An Instruction is a single instruction in the VM.
-type Instruction func(*Machine) error
+type Instruction func(context.Context, *Machine) error
 
 //Run executes all is instructions in execution context m.
-func (m *Machine) Run(is []Instruction) error {
+func (m *Machine) Run(ctx context.Context, is []Instruction) error {
+	var err error
+loop:
 	for _, i := range is {
-		if err := i(m); err != nil {
-			if m.stack.Open() {
-				_ = m.drain(true)
-				//TODO handle SQLITE_BUSY somewhere
-				_ = m.exec("ROLLBACK;")
-			}
-			return errusr.Wrap(m.pos, err)
+		if err = i(ctx, m); err != nil {
+			break
 		}
+		select {
+		case <-ctx.Done():
+			err = ctx.Err()
+			break loop
+		default:
+		}
+	}
+	if err != nil {
+		if m.stack.Open() {
+			_ = m.drain(true)
+			//TODO handle SQLITE_BUSY somewhere
+			_ = m.exec("ROLLBACK;")
+		}
+		return errusr.Wrap(m.pos, err)
 	}
 	return m.drain(false)
 }
@@ -43,7 +55,7 @@ func (a assertionError) Error() string {
 
 //Assert returns an assertion.
 func Assert(pos token.Position, msg, query string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		ret, err := m.conn.Assert(query)
 		if err != nil {
 			return err
@@ -59,20 +71,20 @@ func Assert(pos token.Position, msg, query string) Instruction {
 }
 
 func ErrPos(p token.Position) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		m.pos = p
 		return nil
 	}
 }
 
 func SetEncoder(e format.Encoder) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		return m.setEncoder(e)
 	}
 }
 
 func SetDecoder(d format.Decoder) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		return m.setDecoder(d)
 	}
 }
@@ -80,26 +92,26 @@ func SetDecoder(d format.Decoder) Instruction {
 //SetEncodingFrame specifies the data frame (table) to encode,
 //if applicable to the current format.
 func SetEncodingFrame(f string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		m.eframe = f
 		return nil
 	}
 }
 
 func UseStdout() Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		return m.setOutput(std.Out)
 	}
 }
 
 func UseStdin() Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		return m.setInput(std.In, "[-]")
 	}
 }
 
 func UseFileOutput(fname string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		f, err := file.NewWriter(fname)
 		if err != nil {
 			return err
@@ -109,7 +121,7 @@ func UseFileOutput(fname string) Instruction {
 }
 
 func UseFileInput(fname string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		f, err := file.NewReader(fname)
 		if err != nil {
 			return err
@@ -131,19 +143,19 @@ func UseFileInput(fname string) Instruction {
 }
 
 func Savepoint() Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		return m.savepointStmt.Exec()
 	}
 }
 
 func Release() Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		return m.releaseStmt.Exec()
 	}
 }
 
 func DropTempTables(names []string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		for _, name := range names {
 			if err := m.exec("DROP TABLE temp." + name); err != nil {
 				return err
@@ -154,13 +166,13 @@ func DropTempTables(names []string) Instruction {
 }
 
 func Exec(q string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		return m.exec(q) //TODO fastpath this in driver
 	}
 }
 
 func BeginTransaction(q string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		if err := m.stack.Begin(); err != nil {
 			return errint.Wrap(err)
 		}
@@ -169,7 +181,7 @@ func BeginTransaction(q string) Instruction {
 }
 
 func CommitTransaction(q string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		if err := m.stack.End(); err != nil {
 			return errint.Wrap(err)
 		}
@@ -181,14 +193,14 @@ func CommitTransaction(q string) Instruction {
 }
 
 func UserSavepoint(name, q string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		m.stack.Savepoint(name)
 		return m.exec(q)
 	}
 }
 
 func UserRelease(name, q string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		if err := m.stack.Release(name); err != nil {
 			return errint.Wrap(err)
 		}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"io"
 	"log"
@@ -69,6 +70,7 @@ func main() {
 		usesStdin = true
 	}
 	//XXX if above, and nothing selected, try first arg?
+	ctx := context.Background()
 
 	err := driver.Init()
 	if err != nil {
@@ -85,7 +87,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := vm.Run(bc); err != nil {
+	if err := vm.Run(ctx, bc); err != nil {
 		log.Fatal(err)
 	}
 	errs := vm.Close()

@@ -1,10 +1,12 @@
 package virt
 
+import "context"
+
 //Query creates an Instruction out of SQL query q.
 //If q returns no columns, it is merely exec'd without export.
 //Otherwise, an export is done using the export spec and the current output.
 func Query(q string) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		stmt, err := m.conn.Prepare(q)
 		if err != nil {
 			//TODO if a syntax error return an etlite syntax error

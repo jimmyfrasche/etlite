@@ -1,6 +1,7 @@
 package virt
 
 import (
+	"context"
 	"errors"
 	"io"
 
@@ -44,8 +45,10 @@ func (s ImportSpec) Valid() error {
 	return nil
 }
 
+//XXX have compiler write all SQL and just pass select/insert to export/import? what about derived table names then?
+
 func Import(s ImportSpec) Instruction {
-	return func(m *Machine) error {
+	return func(ctx context.Context, m *Machine) error {
 		if err := s.Valid(); err != nil {
 			return err
 		}
