@@ -19,6 +19,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 			panic(errint.Newf("%s cannot have etl subqueries, found %d", s.Kind, ls))
 		}
 		c.compileTransactor(s)
+		return
 	case ast.CreateTableFrom, ast.CreateTableAs, ast.InsertFrom:
 		if ls := len(s.Subqueries); ls != 1 {
 			panic(errint.Newf("%s must have exactly 1 etl subquery, found %d", s.Kind, ls))
