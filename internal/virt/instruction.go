@@ -144,13 +144,18 @@ func UseFileInput(fname string) Instruction {
 
 func Savepoint() Instruction {
 	return func(ctx context.Context, m *Machine) error {
+		m.stack.Savepoint("[1]")
 		return m.savepointStmt.Exec()
 	}
 }
 
 func Release() Instruction {
 	return func(ctx context.Context, m *Machine) error {
-		return m.releaseStmt.Exec()
+		if err := m.releaseStmt.Exec(); err != nil {
+			return err
+		}
+		m.stack.Release("[1]")
+		return nil
 	}
 }
 
