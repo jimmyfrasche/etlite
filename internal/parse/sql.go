@@ -411,7 +411,7 @@ func (p *sqlParser) with(t token.Value, subq, etl, arg bool) token.Value {
 		}
 	}
 
-	//XXX could allow etl IFF if part of compound operator?
+	//XXX could allow etl IFF part of compound operator?
 	switch t.Canon {
 	default:
 		panic(p.unexpected(t))
