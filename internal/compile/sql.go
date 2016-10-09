@@ -20,7 +20,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 		}
 		c.compileTransactor(s)
 		return
-	case ast.CreateTableFrom, ast.CreateTableAs, ast.InsertFrom:
+	case ast.CreateTableFrom, ast.InsertFrom:
 		if ls := len(s.Subqueries); ls != 1 {
 			panic(errint.Newf("%s must have exactly 1 etl subquery, found %d", s.Kind, ls))
 		}
@@ -64,20 +64,13 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	switch s.Kind {
 	case ast.Exec:
 		c.push(virt.Exec(q))
-	case ast.CreateTableAs:
-		//need to release the savepoint before the query
-		//so as to not interfere with the creation of the table
-		c.push(virt.Release())
-		fallthrough
 	case ast.Query:
 		c.push(virt.Query(q))
 	}
 
 	if len(tables) > 0 {
 		c.push(virt.DropTempTables(tables))
-		if s.Kind != ast.CreateTableAs {
-			c.push(virt.Release())
-		}
+		c.push(virt.Release())
 	}
 	return
 }

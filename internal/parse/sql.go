@@ -614,8 +614,6 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 	p.sql.Name = name
 
 	if t.Literal("AS") {
-		//let the compiler know subquery imports have to be handled gingerly
-		p.sql.Kind = ast.CreateTableAs
 		p.push(t)
 		_ = p.regular(p.next(), 0, false, true, true)
 		return

@@ -17,7 +17,6 @@ const (
 	Query
 	Exec
 	CreateTableFrom
-	CreateTableAs
 	InsertFrom
 	Savepoint
 	Release
