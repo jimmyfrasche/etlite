@@ -611,6 +611,7 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 			panic(p.errMsg(last, "digital temporary table names are reserved by etlite"))
 		}
 	}
+	p.sql.Name = name
 
 	if t.Literal("AS") {
 		//let the compiler know subquery imports have to be handled gingerly
@@ -643,7 +644,6 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 		p.synth(t, token.Semicolon)
 
 		//we can't use subImport since this is a special case
-		p.sql.Name = name
 		t = p.specialSubImport(p.expectLit("IMPORT"))
 	}
 }
