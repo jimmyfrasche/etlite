@@ -1,8 +1,6 @@
 package compile
 
 import (
-	"bytes"
-
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
@@ -34,20 +32,24 @@ func fmtNameToken(t token.Value) string {
 	return escape.String(s)
 }
 
-func rewrite(buf *bytes.Buffer, s *ast.SQL, tables []string, noArg bool) {
+func (c *compiler) rewrite(s *ast.SQL, tables []string, noArg bool) string {
 	if lr, ls := len(tables), len(s.Subqueries); lr != ls {
 		panic(errint.Newf("rewrite sql: expected %d replacements got %d", ls, lr))
 	}
 
+	if c.r.Tokens == nil {
+		c.r.Tokens = make([]token.Value, 0, 2*len(s.Tokens))
+	}
+
 	i := 0 //count replacements to triplecheck
-	for j, t := range s.Tokens {
+	for _, t := range s.Tokens {
 		switch t.Kind {
 		case token.Placeholder:
 			if i < len(tables) {
-				s.Tokens[j] = token.Value{
+				c.r.Tokens = append(c.r.Tokens, token.Value{
 					Kind:  token.Literal,
 					Value: "SELECT * FROM temp." + tables[i],
-				}
+				})
 			}
 			i++
 		case token.Argument:
@@ -55,6 +57,8 @@ func rewrite(buf *bytes.Buffer, s *ast.SQL, tables []string, noArg bool) {
 				panic(errint.Newf("expected no arguments in %#v", s))
 			}
 			//TODO move argument rewriting here
+		default:
+			c.r.Tokens = append(c.r.Tokens, t)
 		}
 	}
 
@@ -62,7 +66,11 @@ func rewrite(buf *bytes.Buffer, s *ast.SQL, tables []string, noArg bool) {
 		panic(errint.Newf("expected %d replacements in subquery got %d:\n%#v", len(s.Subqueries), i, s))
 	}
 
-	if err := s.Print(buf); err != nil {
+	if err := c.r.Print(c.buf); err != nil {
 		panic(err)
 	}
+
+	c.r.Tokens = c.r.Tokens[:0]
+
+	return c.bufStr()
 }

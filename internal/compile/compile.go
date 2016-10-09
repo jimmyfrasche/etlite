@@ -16,8 +16,13 @@ import (
 type compiler struct {
 	usedStdin bool
 	inst      []virt.Instruction
-	buf       *bytes.Buffer
-	stack     *savepoint.Stack
+
+	//caches for query rewriting
+	buf *bytes.Buffer
+	r   *ast.SQL
+
+	//track savepoints to ensure no invalid programs
+	stack *savepoint.Stack
 }
 
 func (c *compiler) push(is ...virt.Instruction) {
@@ -36,6 +41,7 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 		inst:      make([]virt.Instruction, 0, 128),
 		usedStdin: usedStdin,
 		buf:       &bytes.Buffer{},
+		r:         &ast.SQL{Kind: ast.Query},
 		stack:     savepoint.New(),
 	}
 

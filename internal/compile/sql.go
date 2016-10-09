@@ -32,8 +32,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	case ast.CreateTableFrom, ast.InsertFrom:
 		nm := fmtName(s.Name)
 		i := s.Subqueries[0]
-		rewrite(c.buf, s, nil, false)
-		ddl := c.bufStr()
+		ddl := c.rewrite(s, nil, false)
 		if s.Kind == ast.CreateTableFrom {
 			//TODO when we factor out insert stuff push create table then custom insert importer
 			c.compileCreateTableAsImport(nm, ddl, i)
@@ -58,8 +57,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	}
 	c.push(virt.ErrPos(s.Pos()))
 
-	rewrite(c.buf, s, tables, true)
-	q := c.bufStr()
+	q := c.rewrite(s, tables, true)
 
 	switch s.Kind {
 	case ast.Exec:
@@ -83,8 +81,7 @@ func (c *compiler) compileTransactor(s *ast.SQL) {
 		panic(errint.New("no savepoint name provided by parser"))
 	}
 
-	rewrite(c.buf, s, nil, false)
-	q := c.bufStr()
+	q := c.rewrite(s, nil, false)
 
 	//normalize name
 	name := strings.ToLower(fmtName(s.Name))
