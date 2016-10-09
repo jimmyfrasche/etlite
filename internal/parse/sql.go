@@ -53,6 +53,14 @@ func (p *sqlParser) subImport(t token.Value, subq, etl bool) token.Value {
 	return t
 }
 
+//specialSubImport is used only by CreateTableFrom and InsertFrom
+func (p *sqlParser) specialSubImport(t token.Value) token.Value {
+	var n ast.Node
+	n, t = p.importStmt(t, false, false, nil)
+	p.sql.Subqueries = []*ast.Import{n.(*ast.Import)}
+	return t
+}
+
 func digital(s string) bool {
 	for i := 0; i < len(s); i++ {
 		if b := s[i]; b < '0' || b > '9' {
@@ -520,10 +528,12 @@ loop:
 		t = p.expect(token.Semicolon)
 		p.push(t)
 		return t //this isn't used anywhere, but needed for symmetry
-	case "IMPORT":
-		//TODO we could add a special FROM IMPORT here, with a little work
+	case "FROM":
 		p.sql.Kind = ast.InsertFrom
-		panic(p.errMsg(t, "INSERT ... IMPORT is currently unsupported"))
+		//we don't consume from and leave the ast for the insert hanging,
+		//so that the compiler can add the (?, ?, ..., ?); for however many
+		//placeholders are needed.
+		return p.specialSubImport(p.expectLit("IMPORT"))
 	case "WITH":
 		return p.with(t, subq, etl, arg)
 	case "VALUES", "SELECT":
@@ -633,11 +643,8 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 		p.synth(t, token.Semicolon)
 
 		//we can't use subImport since this is a special case
-		//TODO will be less of a special case when INSERT FROM is implemented
-		var n ast.Node
-		n, t = p.importStmt(p.expectLit("IMPORT"), false, false, nil)
 		p.sql.Name = name
-		p.sql.Subqueries = []*ast.Import{n.(*ast.Import)}
+		t = p.specialSubImport(p.expectLit("IMPORT"))
 	}
 }
 
