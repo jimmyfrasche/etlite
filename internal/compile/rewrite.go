@@ -1,11 +1,23 @@
 package compile
 
 import (
+	"strings"
+
 	"github.com/jimmyfrasche/etlite/internal/ast"
+	"github.com/jimmyfrasche/etlite/internal/internal/digital"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
+
+func parseArg(t token.Value) (s string, isNum bool) {
+	isNum = digital.String(t.Value)
+	s = t.Value
+	if !isNum {
+		s = escape.String(s)
+	}
+	return
+}
 
 func fmtName(name []token.Value) string {
 	switch ln := len(name); ln {
@@ -32,6 +44,13 @@ func fmtNameToken(t token.Value) string {
 	return escape.String(s)
 }
 
+func (c *compiler) appendSynth(qp string) {
+	c.r.Tokens = append(c.r.Tokens, token.Value{
+		Kind:  token.Literal,
+		Value: qp,
+	})
+}
+
 func (c *compiler) rewrite(s *ast.SQL, tables []string, noArg bool) string {
 	if lr, ls := len(tables), len(s.Subqueries); lr != ls {
 		panic(errint.Newf("rewrite sql: expected %d replacements got %d", ls, lr))
@@ -46,17 +65,19 @@ func (c *compiler) rewrite(s *ast.SQL, tables []string, noArg bool) string {
 		switch t.Kind {
 		case token.Placeholder:
 			if i < len(tables) {
-				c.r.Tokens = append(c.r.Tokens, token.Value{
-					Kind:  token.Literal,
-					Value: "SELECT * FROM temp." + tables[i],
-				})
+				c.appendSynth("SELECT * FROM temp." + tables[i])
 			}
 			i++
 		case token.Argument:
 			if noArg {
 				panic(errint.Newf("expected no arguments in %#v", s))
 			}
-			//TODO move argument rewriting here
+			s, isNum := parseArg(t)
+			q := []string{"(SELECT value FROM sys.", "env", " WHERE ", "name", "=", s, ")"}
+			if isNum {
+				q[1], q[3] = "args", "rowid"
+			}
+			c.appendSynth(strings.Join(q, ""))
 		default:
 			c.r.Tokens = append(c.r.Tokens, t)
 		}

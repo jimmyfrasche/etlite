@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/parse/internal/interpolate"
+	"github.com/jimmyfrasche/etlite/internal/internal/digital"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
@@ -61,15 +61,6 @@ func (p *sqlParser) specialSubImport(t token.Value) token.Value {
 	return t
 }
 
-func digital(s string) bool {
-	for i := 0; i < len(s); i++ {
-		if b := s[i]; b < '0' || b > '9' {
-			return false
-		}
-	}
-	return true
-}
-
 func (p *sqlParser) name(t token.Value) (token.Value, []token.Value) {
 	t, name := p.parser.name(t)
 	p.sql.Name = name
@@ -81,7 +72,7 @@ func (p *sqlParser) chkDigTmp(name []token.Value) {
 		s, _ := name[0].Unescape()
 		if strings.ToUpper(s) == "TEMP" {
 			s, _ = name[2].Unescape()
-			if digital(s) {
+			if digital.String(s) {
 				panic(p.errMsg(name[0], "digital temporary table names are reserved by etlite"))
 			}
 		}
@@ -294,7 +285,7 @@ func (p *sqlParser) savepoint(t token.Value) {
 	if !ok {
 		panic(p.unexpected(t))
 	}
-	if digital(s) {
+	if digital.String(s) {
 		panic(p.errMsg(t, "digital savepoint names are reserved by etlite"))
 	}
 	p.sql.Name = []token.Value{t}
@@ -607,7 +598,7 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 	if temp {
 		last := name[len(name)-1]
 		s, _ := last.Unescape()
-		if digital(s) {
+		if digital.String(s) {
 			panic(p.errMsg(last, "digital temporary table names are reserved by etlite"))
 		}
 	}
@@ -720,16 +711,7 @@ func (p *sqlParser) regular(t token.Value, depth int, subq, etl, arg bool) token
 			if !arg {
 				panic(p.errMsg(t, "illegal @ substitution"))
 			}
-			//TODO move all sql rewriting to compiler, and just fallthrough
-
-			ts, err := interpolate.Desugar(t)
-			if err != nil {
-				panic(p.mkErr(t, err))
-			}
-			p.synth(t, token.LParen)
-			p.extend(ts...)
-			p.synth(t, token.RParen)
-			t = p.next()
+			fallthrough
 
 		default:
 			//check for compound operators

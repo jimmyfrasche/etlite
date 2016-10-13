@@ -3,7 +3,6 @@ package parse
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/parse/internal/fmtname"
-	"github.com/jimmyfrasche/etlite/internal/parse/internal/interpolate"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
@@ -69,12 +68,8 @@ func (p *parser) assertStmt(t token.Value) *ast.Assert {
 		//trim off ()
 		a.Subquery.Tokens = a.Subquery.Tokens[1 : len(a.Subquery.Tokens)-1]
 	case token.Argument:
-		ts, err := interpolate.DesugarAssert(t)
-		if err != nil {
-			panic(p.mkErr(t, err))
-		}
 		a.Subquery = &ast.SQL{
-			Tokens: ts,
+			Tokens: []token.Value{t},
 		}
 	}
 

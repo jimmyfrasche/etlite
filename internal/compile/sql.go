@@ -57,7 +57,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	}
 	c.push(virt.ErrPos(s.Pos()))
 
-	q := c.rewrite(s, tables, true)
+	q := c.rewrite(s, tables, false)
 
 	switch s.Kind {
 	case ast.Exec:
