@@ -44,15 +44,6 @@ loop:
 	return m.drain(false)
 }
 
-type assertionError struct {
-	pos token.Position
-	msg string
-}
-
-func (a assertionError) Error() string {
-	return fmt.Sprintf("%s: assertion failure: %s", a.pos, a.msg)
-}
-
 //Assert returns an assertion.
 func Assert(pos token.Position, msg, query string) Instruction {
 	return func(ctx context.Context, m *Machine) error {
@@ -61,10 +52,7 @@ func Assert(pos token.Position, msg, query string) Instruction {
 			return err
 		}
 		if !ret {
-			return assertionError{
-				pos: pos,
-				msg: msg,
-			}
+			return fmt.Errorf("assertion failure: %s", msg)
 		}
 		return nil
 	}
