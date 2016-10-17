@@ -14,8 +14,9 @@ import (
 )
 
 type compiler struct {
-	usedStdin bool
-	inst      []virt.Instruction
+	usedStdin, hadDevice bool
+
+	inst []virt.Instruction
 
 	//caches for query rewriting
 	buf *bytes.Buffer

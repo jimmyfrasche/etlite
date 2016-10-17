@@ -28,6 +28,10 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 		//can have any number
 	}
 
+	if c.usedStdin && !c.hadDevice && s.Kind == ast.Query {
+		panic(errusr.Newf(s.Pos(), "no output device specified: default stdin used for script input"))
+	}
+
 	switch s.Kind {
 	case ast.CreateTableFrom, ast.InsertFrom:
 		nm := fmtName(s.Name)
