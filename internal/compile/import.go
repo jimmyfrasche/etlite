@@ -21,6 +21,7 @@ func (c *compiler) compileCreateTableAsImport(name, ddl string, i *ast.Import) {
 	c.push(virt.Import(virt.ImportSpec{
 		Pos:    i.Pos(),
 		Table:  name,
+		Frame:  i.Frame,
 		Limit:  i.Limit,
 		Offset: i.Offset,
 		DDL:    ddl,
@@ -40,6 +41,7 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 		Pos:      i.Pos(),
 		Internal: true,
 		Table:    tbl,
+		Frame:    i.Frame,
 		Limit:    i.Limit,
 		Offset:   i.Offset,
 	}))
@@ -51,6 +53,7 @@ func (c *compiler) compileImport(i *ast.Import) {
 		Pos:    i.Pos(),
 		Temp:   i.Temporary,
 		Table:  i.Table,
+		Frame:  i.Frame,
 		Header: i.Header,
 		Limit:  i.Limit,
 		Offset: i.Offset,
