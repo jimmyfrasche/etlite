@@ -3,15 +3,12 @@ package virt
 import (
 	"context"
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/device/file"
 	"github.com/jimmyfrasche/etlite/internal/device/std"
 	"github.com/jimmyfrasche/etlite/internal/format"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
-	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
@@ -94,7 +91,7 @@ func UseStdout() Instruction {
 
 func UseStdin() Instruction {
 	return func(ctx context.Context, m *Machine) error {
-		return m.setInput(std.In, "[-]")
+		return m.setInput(std.In)
 	}
 }
 
@@ -114,19 +111,7 @@ func UseFileInput(fname string) Instruction {
 		if err != nil {
 			return err
 		}
-		base := filepath.Base(fname)
-		idx := strings.LastIndexByte(base, '.')
-		switch {
-		case idx < 0:
-			// filename
-		case idx == 0:
-			// .filename
-			base = base[1:]
-		case idx > 0:
-			// filename.ext
-			base = base[:idx]
-		}
-		return m.setInput(f, escape.String(base))
+		return m.setInput(f)
 	}
 }
 

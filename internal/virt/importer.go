@@ -34,13 +34,11 @@ func (s ImportSpec) Valid() error {
 		if s.Table == "" {
 			return errint.New("CREATE TABLE FROM provides no table name")
 		}
-	} else if s.Internal {
-		if s.Temp {
-			return errint.New("internal table marked as temporary (by system, not user)")
-		}
-		if s.Table == "" {
-			return errint.New("internal table did not provide name")
-		}
+	} else if s.Internal && s.Temp {
+		return errint.New("internal table marked as temporary (by system, not user)")
+	}
+	if s.Table == "" {
+		return errint.New("table did not provide name")
 	}
 	return nil
 }
@@ -69,19 +67,6 @@ func Import(s ImportSpec) Instruction {
 			}
 			if err := p.Close(); err != nil {
 				return err
-			}
-		}
-
-		//derive table name, if none provided
-		if s.Table == "" {
-			//this is an import statement by construction: CREATE TABLE FROM and internal always named
-
-			if s.Frame != "" {
-				s.Table = s.Frame
-			} else if m.derivedTableName != "" {
-				s.Table = m.derivedTableName
-			} else {
-				return errint.New("failed to derive table name")
 			}
 		}
 

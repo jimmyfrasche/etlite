@@ -2,8 +2,10 @@ package compile
 
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
+	"github.com/jimmyfrasche/etlite/internal/internal/digital"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
+	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
@@ -64,8 +66,36 @@ func (c *compiler) compileImportDeviceAndFormat(i *ast.Import) {
 
 	if i.Device != nil {
 		c.compileDevice(i.Device, inputDevice)
+		c.frname = "" //no longer correct since we've changed devices
 	}
 	if i.Format != nil {
 		c.compileFormat(i.Format, inputFormat)
+		c.frname = "" //no longer correct since we've changed formats
+	}
+
+	if i.Frame == "" {
+		//if there's a previous frame and we haven't switched frames, propagate
+		i.Frame = c.frname
+	} else {
+		//record new frame so we can propagate or derive table names
+		c.frname = i.Frame
+	}
+
+	if i.Table == "" {
+		if c.dname != "" && !c.nameUsed(c.dname) {
+			c.rec(c.dname)
+			i.Table = c.dname
+		} else if c.frname != "" && !c.nameUsed(c.frname) {
+			c.rec(c.frname)
+			i.Table = c.frname
+		} else {
+			panic(errusr.New(i.Pos(), "cannot derive table name"))
+		}
+		if i.Temporary && digital.String(i.Table) {
+			panic(errusr.New(i.Pos(), "derived name for temp table is numeric, which is reserved"))
+		}
+		i.Table = escape.String(i.Table)
+	} else {
+		c.rec(i.Table)
 	}
 }

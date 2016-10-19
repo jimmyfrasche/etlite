@@ -25,7 +25,7 @@ type Machine struct {
 	sys                        *sysdb.Sysdb
 	savepointStmt, releaseStmt *driver.Stmt
 
-	eframe, derivedTableName string
+	eframe string
 
 	stack *savepoint.Stack
 	pos   token.Position
@@ -54,8 +54,7 @@ func New(db string, args, env []string) (*Machine, error) {
 			UseCRLF:  eol.Default,
 			NoHeader: true,
 		},
-		derivedTableName: "[-]",
-		stack:            savepoint.New(),
+		stack: savepoint.New(),
 	}
 	//Init default dec/enc
 	if err := m.decoder.Init(m.input); err != nil {
@@ -156,7 +155,7 @@ func (m *Machine) drain(failed bool) (firstErr error) {
 	return firstErr
 }
 
-func (m *Machine) setInput(in device.Reader, derivedTableName string) error {
+func (m *Machine) setInput(in device.Reader) error {
 	if in == nil {
 		return errint.New("no input device specified")
 	}
@@ -174,7 +173,7 @@ func (m *Machine) setInput(in device.Reader, derivedTableName string) error {
 	if err := m.input.Close(); err != nil {
 		return err
 	}
-	m.input, m.derivedTableName = in, derivedTableName
+	m.input = in
 
 	return m.decoder.Init(m.input)
 }

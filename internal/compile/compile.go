@@ -5,6 +5,7 @@ package compile
 import (
 	"bytes"
 	"runtime"
+	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
@@ -15,6 +16,9 @@ import (
 
 type compiler struct {
 	usedStdin, hadDevice bool
+
+	dname, frname string
+	used          map[string]bool
 
 	inst []virt.Instruction
 
@@ -36,14 +40,27 @@ func (c *compiler) bufStr() string {
 	return s
 }
 
+func (c *compiler) rec(name string) {
+	c.used[strings.ToLower(name)] = true
+}
+
+func (c *compiler) nameUsed(nm string) bool {
+	return c.used[strings.ToLower(nm)]
+}
+
 //Nodes collects and compiles the nodes on from into instructions for our VM.
 func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instruction, err error) {
 	c := &compiler{
 		inst:      make([]virt.Instruction, 0, 128),
 		usedStdin: usedStdin,
+		used:      map[string]bool{},
 		buf:       &bytes.Buffer{},
 		r:         &ast.SQL{Kind: ast.Query},
 		stack:     savepoint.New(),
+	}
+
+	if !usedStdin {
+		c.dname = "-"
 	}
 
 	defer func() {
