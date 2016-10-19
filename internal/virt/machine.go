@@ -91,12 +91,12 @@ func (m *Machine) Close() (errs []error) {
 			errs = append(errs, err)
 		}
 	}
+	err(m.encoder.Close())
+	err(m.decoder.Close())
 	o := m.output
 	err(o.Flush())
 	err(o.Close())
 	err(m.input.Close())
-	err(m.encoder.Close())
-	err(m.decoder.Close())
 	err(m.sys.Close())
 	err(m.savepointStmt.Close())
 	err(m.releaseStmt.Close())
