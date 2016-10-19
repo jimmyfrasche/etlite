@@ -7,8 +7,8 @@ import (
 )
 
 func (c *compiler) compileDisplay(d *ast.Display) {
-	if d.Format == nil && d.Device == nil {
-		panic(errusr.New(d.Pos(), "at least one of format or device must be specified on DISPLAY statement"))
+	if d.Format == nil && d.Device == nil && d.Frame == "" {
+		panic(errusr.New(d.Pos(), "at least one of format, device, or frame must be specified on DISPLAY statement"))
 	}
 
 	c.compileFormat(d.Format, outputFormat)
