@@ -50,7 +50,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 	default:
 		panic(errint.Newf("unrecognized Device type: %T", d))
 
-	case *ast.DeviceStdio: //never pushes
+	case *ast.DeviceStdio:
 		if read {
 			c.derivedDeviceName("-")
 			c.push(virt.UseStdin())
@@ -58,7 +58,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 			c.push(virt.UseStdout())
 		}
 
-	case *ast.DeviceFile: //always pushes filename
+	case *ast.DeviceFile:
 		name, ok := d.Name.Unescape()
 		if !ok {
 			panic(errint.Newf("file device name must be literal or string got %s", d.Name.Kind))
