@@ -71,7 +71,11 @@ func Import(s ImportSpec) Instruction {
 		}
 
 		//prep the decoder
-		inHeader, err := m.readHeader(s.Table, s.Frame, s.Header)
+		dec := m.decoder
+		if dec == nil {
+			return errint.New("no decoder available when importing")
+		}
+		inHeader, err := dec.ReadHeader(s.Frame, s.Header)
 		if err != nil {
 			return err
 		}
@@ -110,19 +114,6 @@ func Import(s ImportSpec) Instruction {
 
 		return nil
 	}
-}
-
-func (m *Machine) readHeader(table, frame string, header []string) ([]string, error) {
-	dec := m.decoder
-	if dec == nil {
-		return nil, errint.New("no decoder available when importing")
-	}
-
-	if frame != "" {
-		table = frame
-	}
-
-	return dec.ReadHeader(table, header)
 }
 
 //CreateTable initializes the decoder then creates table name with header.
