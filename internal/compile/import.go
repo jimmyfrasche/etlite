@@ -61,9 +61,15 @@ func (c *compiler) compileImport(i *ast.Import) {
 }
 
 func (c *compiler) compileImportCommon(i *ast.Import) {
-	if c.usedStdin && i.Device != nil {
-		if _, ok := i.Device.(*ast.DeviceStdio); ok {
-			panic(errusr.New(i.Pos(), "script needs to read from stdin but script itself was read from stdin"))
+	//if we used stdin to read the script we have to make sure
+	//that a device has been specified and that stdin is never specified.
+	if c.usedStdin {
+		if i.Device != nil {
+			if _, ok := i.Device.(*ast.DeviceStdio); ok {
+				panic(errusr.New(i.Pos(), "script needs to read from stdin but script itself was read from stdin"))
+			}
+		} else if !c.hadDevice {
+			panic(errusr.New(i.Pos(), "no input device specified: default stdin used for script input"))
 		}
 	}
 

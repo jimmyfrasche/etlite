@@ -70,5 +70,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 			c.push(virt.UseFileOutput(name))
 		}
 	}
-	c.hadDevice = true
+	if read {
+		c.hadDevice = true
+	}
 }
