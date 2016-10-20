@@ -17,7 +17,7 @@ func (c *compiler) compileCreateTableAsImport(name, ddl string, i *ast.Import) {
 		panic(errusr.New(i.Pos(), "illegal to specify header in create table from import"))
 	}
 
-	c.compileImportDeviceAndFormat(i)
+	c.compileImportCommon(i)
 	c.push(virt.Import(virt.ImportSpec{
 		Pos:    i.Pos(),
 		Table:  name,
@@ -36,7 +36,7 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 		panic(errint.New("compileSubImport requires table name"))
 	}
 
-	c.compileImportDeviceAndFormat(i)
+	c.compileImportCommon(i)
 	c.push(virt.Import(virt.ImportSpec{
 		Pos:      i.Pos(),
 		Internal: true,
@@ -48,7 +48,7 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 }
 
 func (c *compiler) compileImport(i *ast.Import) {
-	c.compileImportDeviceAndFormat(i)
+	c.compileImportCommon(i)
 	c.push(virt.Import(virt.ImportSpec{
 		Pos:    i.Pos(),
 		Temp:   i.Temporary,
@@ -60,7 +60,7 @@ func (c *compiler) compileImport(i *ast.Import) {
 	}))
 }
 
-func (c *compiler) compileImportDeviceAndFormat(i *ast.Import) {
+func (c *compiler) compileImportCommon(i *ast.Import) {
 	if c.usedStdin && i.Device != nil {
 		if _, ok := i.Device.(*ast.DeviceStdio); ok {
 			panic(errusr.New(i.Pos(), "script needs to read from stdin but script itself was read from stdin"))
