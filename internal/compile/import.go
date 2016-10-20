@@ -76,6 +76,16 @@ func (c *compiler) compileImportDeviceAndFormat(i *ast.Import) {
 		c.frname = "" //no longer correct since we've changed formats
 	}
 
+	//header propagation
+	if i.Device != nil || i.Format != nil || i.Frame != "" {
+		c.hdr = nil
+	}
+	if len(i.Header) == 0 {
+		i.Header = c.hdr
+	} else {
+		c.hdr = i.Header
+	}
+
 	if i.Frame == "" {
 		//if there's a previous frame and we haven't switched frames, propagate
 		i.Frame = c.frname

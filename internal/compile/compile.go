@@ -19,6 +19,7 @@ type compiler struct {
 
 	dname, frname string
 	used          map[string]bool
+	hdr           []string
 
 	inst []virt.Instruction
 
