@@ -43,8 +43,6 @@ func (s ImportSpec) Valid() error {
 	return nil
 }
 
-//XXX have compiler write all SQL and just pass select/insert to export/import? what about derived table names then?
-
 func Import(s ImportSpec) Instruction {
 	return func(ctx context.Context, m *Machine) error {
 		if err := s.Valid(); err != nil {
@@ -118,13 +116,7 @@ func Import(s ImportSpec) Instruction {
 	}
 }
 
-//CreateTable initializes the decoder then creates table name with header.
-//
-//InitDecoder must be called before this.
-//
-//See MkCreateTableFrom and BulkInsert.
 func (m *Machine) createTable(temp bool, name string, header []string) string {
-	//create ddl
 	b := builder.New("CREATE")
 
 	if temp {
@@ -159,13 +151,6 @@ func (m *Machine) createInserter(name string, header []string) string {
 	return b.Join(" ")
 }
 
-//BulkInsert from the current decoder into table name with header.
-//
-//Table name must exist and should have been created by
-//either CreateTableFrom or CreateTable, with no intervening
-//reads to or changes of the decoder.
-//
-//Before that DecodeHeader must be called.
 func (m *Machine) bulkInsert(name, ins string, limit, offset int) error {
 	//make sure we have a decoder
 	dec := m.decoder
