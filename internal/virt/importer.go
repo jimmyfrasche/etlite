@@ -188,6 +188,17 @@ func (m *Machine) bulkInsert(ctx context.Context, name, ins string, limit, offse
 		if err := bulk.Load(row); err != nil {
 			return err
 		}
+
+		if rows%bulkCheck == 0 {
+			select {
+			default:
+			case <-ctx.Done():
+				if err := bulk.Close(); err != nil {
+					return err
+				}
+				return ctx.Err()
+			}
+		}
 	}
 
 	if err := bulk.Close(); err != nil {

@@ -30,9 +30,17 @@ func Query(q string) Instruction {
 		if err != nil {
 			return err
 		}
-		for iter.Next() {
+		for rows := 0; iter.Next(); rows++ {
 			if err := e.WriteRow(iter.Row()); err != nil {
 				return err
+			}
+			if rows%bulkCheck == 0 {
+				select {
+				default:
+				case <-ctx.Done():
+					//TODO should have way to force shutdown of iter
+					return ctx.Err()
+				}
 			}
 		}
 		if err := iter.Err(); err != nil {

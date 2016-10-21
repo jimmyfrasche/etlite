@@ -13,6 +13,9 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/virt/internal/sysdb"
 )
 
+//how many rows to import/export before polling context
+const bulkCheck = 300
+
 //Machine represents an execution context for a script.
 type Machine struct {
 	name    string
