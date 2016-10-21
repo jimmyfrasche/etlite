@@ -103,7 +103,8 @@ func Import(s ImportSpec) Instruction {
 			}
 		}
 
-		if err := m.bulkInsert(s.Table, s.Header, s.Limit, s.Offset); err != nil {
+		ins := m.createInserter(s.Table, s.Header)
+		if err := m.bulkInsert(s.Table, ins, s.Limit, s.Offset); err != nil {
 			return err
 		}
 
@@ -165,7 +166,7 @@ func (m *Machine) createInserter(name string, header []string) string {
 //reads to or changes of the decoder.
 //
 //Before that DecodeHeader must be called.
-func (m *Machine) bulkInsert(name string, header []string, limit, offset int) error {
+func (m *Machine) bulkInsert(name, ins string, limit, offset int) error {
 	//make sure we have a decoder
 	dec := m.decoder
 	if dec == nil {
@@ -173,7 +174,7 @@ func (m *Machine) bulkInsert(name string, header []string, limit, offset int) er
 	}
 
 	//build the bulk loader
-	p, err := m.conn.Prepare(m.createInserter(name, header))
+	p, err := m.conn.Prepare(ins)
 	if err != nil {
 		return err
 	}
