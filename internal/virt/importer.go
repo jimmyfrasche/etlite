@@ -43,6 +43,18 @@ func (s ImportSpec) Valid() error {
 	return nil
 }
 
+func (m *Machine) readHeader(frame string, header []string) ([]string, error) {
+	dec := m.decoder
+	if dec == nil {
+		return nil, errint.New("no decoder available when importing")
+	}
+	inHeader, err := dec.ReadHeader(frame, header)
+	if err != nil {
+		return nil, err
+	}
+	return inHeader, nil
+}
+
 func Import(s ImportSpec) Instruction {
 	return func(ctx context.Context, m *Machine) error {
 		if err := s.Valid(); err != nil {
@@ -68,12 +80,7 @@ func Import(s ImportSpec) Instruction {
 			}
 		}
 
-		//prep the decoder
-		dec := m.decoder
-		if dec == nil {
-			return errint.New("no decoder available when importing")
-		}
-		inHeader, err := dec.ReadHeader(s.Frame, s.Header)
+		inHeader, err := m.readHeader(s.Frame, s.Header)
 		if err != nil {
 			return err
 		}
@@ -149,6 +156,15 @@ func createInserter(name string, header []string) string {
 	b.Push(")")
 
 	return b.Join(" ")
+}
+
+func InsertWith(table, frame, inserter string, header []string, limit, offset int) Instruction {
+	return func(ctx context.Context, m *Machine) error {
+		if _, err := m.readHeader(frame, header); err != nil {
+			return err
+		}
+		return m.bulkInsert(ctx, table, inserter, limit, offset)
+	}
 }
 
 func (m *Machine) bulkInsert(ctx context.Context, name, ins string, limit, offset int) error {

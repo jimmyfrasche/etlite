@@ -1,6 +1,8 @@
 package compile
 
 import (
+	"strings"
+
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/digital"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
@@ -45,6 +47,34 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 		Limit:    i.Limit,
 		Offset:   i.Offset,
 	}))
+}
+
+func (c *compiler) compileInsertFrom(nm string, s *ast.SQL) {
+	c.push(virt.Savepoint())
+
+	imp := s.Subqueries[0]
+	s.Subqueries = nil //no rewrite placeholders
+
+	hdr := make([]string, len(s.Cols))
+	for i, v := range s.Cols {
+		hdr[i] = v.Value
+	}
+	imp.Header = hdr //XXX should we not propagate this header?
+	c.compileImportCommon(imp)
+
+	//serialize insert statement and add VALUES (?, ..., ?);
+	b := make([]string, 3, len(s.Cols)+3)
+	b[0] = c.rewrite(s, nil, false)
+	b[1] = "VALUES"
+	b[2] = "("
+	for range s.Cols[:len(s.Cols)-1] {
+		b = append(b, "?,")
+	}
+	b = append(b, "?);")
+	ins := strings.Join(b, " ")
+
+	c.push(virt.InsertWith(nm, imp.Frame, ins, hdr, imp.Limit, imp.Offset))
+	c.push(virt.Release())
 }
 
 func (c *compiler) compileImport(i *ast.Import) {

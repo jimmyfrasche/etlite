@@ -31,14 +31,13 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	switch s.Kind {
 	case ast.CreateTableFrom, ast.InsertFrom:
 		nm := fmtName(s.Name)
-		i := s.Subqueries[0]
-		ddl := c.rewrite(s, nil, false)
 		if s.Kind == ast.CreateTableFrom {
 			//TODO when we factor out insert stuff push create table then custom insert importer
+			i := s.Subqueries[0]
+			ddl := c.rewrite(s, nil, false)
 			c.compileCreateTableAsImport(nm, ddl, i)
 		} else {
-			//TODO this
-			panic("unimplemented")
+			c.compileInsertFrom(nm, s)
 		}
 		return
 	}
