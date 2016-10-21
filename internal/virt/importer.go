@@ -140,6 +140,23 @@ func (m *Machine) createTable(temp bool, name string, header []string) error {
 	return m.exec(b.Join(" "))
 }
 
+func (m *Machine) createInserter(name string, header []string) string {
+	b := builder.New("INSERT INTO", name, "(")
+
+	b.CSV(header, func(h string) {
+		b.Push(h)
+	})
+
+	b.Push(") VALUES (")
+
+	b.CSV(header, func(string) {
+		b.Push("?")
+	})
+	b.Push(")")
+
+	return b.Join(" ")
+}
+
 //BulkInsert from the current decoder into table name with header.
 //
 //Table name must exist and should have been created by
@@ -155,20 +172,7 @@ func (m *Machine) bulkInsert(name string, header []string, limit, offset int) er
 	}
 
 	//build the bulk loader
-	b := builder.New("INSERT INTO", name, "(")
-
-	b.CSV(header, func(h string) {
-		b.Push(h)
-	})
-
-	b.Push(") VALUES (")
-
-	b.CSV(header, func(string) {
-		b.Push("?")
-	})
-	b.Push(")")
-
-	p, err := m.conn.Prepare(b.Join(" "))
+	p, err := m.conn.Prepare(m.createInserter(name, header))
 	if err != nil {
 		return err
 	}
