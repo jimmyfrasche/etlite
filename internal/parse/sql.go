@@ -620,6 +620,7 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 		t = p.colDef()
 		p.push(t)
 	}
+	t = p.next()
 
 	t = p.maybeRun(t, "WITHOUT", "ROWID")
 	switch {
