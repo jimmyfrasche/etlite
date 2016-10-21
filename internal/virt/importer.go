@@ -95,13 +95,13 @@ func Import(s ImportSpec) Instruction {
 
 		//not a CREATE TABLE FROM so we need to make the table
 		if s.DDL == "" {
-			ddl := m.createTable(s.Temp || s.Internal, s.Table, s.Header)
+			ddl := createTable(s.Temp || s.Internal, s.Table, s.Header)
 			if err := m.exec(ddl); err != nil {
 				return err
 			}
 		}
 
-		ins := m.createInserter(s.Table, s.Header)
+		ins := createInserter(s.Table, s.Header)
 		if err := m.bulkInsert(s.Table, ins, s.Limit, s.Offset); err != nil {
 			return err
 		}
@@ -116,7 +116,7 @@ func Import(s ImportSpec) Instruction {
 	}
 }
 
-func (m *Machine) createTable(temp bool, name string, header []string) string {
+func createTable(temp bool, name string, header []string) string {
 	b := builder.New("CREATE")
 
 	if temp {
@@ -134,7 +134,7 @@ func (m *Machine) createTable(temp bool, name string, header []string) string {
 	return b.Join(" ")
 }
 
-func (m *Machine) createInserter(name string, header []string) string {
+func createInserter(name string, header []string) string {
 	b := builder.New("INSERT INTO", name, "(")
 
 	b.CSV(header, func(h string) {
