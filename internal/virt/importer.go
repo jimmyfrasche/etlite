@@ -97,7 +97,8 @@ func Import(s ImportSpec) Instruction {
 
 		//not a CREATE TABLE FROM so we need to make the table
 		if s.DDL == "" {
-			if err := m.createTable(s.Temp || s.Internal, s.Table, s.Header); err != nil {
+			ddl := m.createTable(s.Temp || s.Internal, s.Table, s.Header)
+			if err := m.exec(ddl); err != nil {
 				return err
 			}
 		}
@@ -121,7 +122,7 @@ func Import(s ImportSpec) Instruction {
 //InitDecoder must be called before this.
 //
 //See MkCreateTableFrom and BulkInsert.
-func (m *Machine) createTable(temp bool, name string, header []string) error {
+func (m *Machine) createTable(temp bool, name string, header []string) string {
 	//create ddl
 	b := builder.New("CREATE")
 
@@ -137,7 +138,7 @@ func (m *Machine) createTable(temp bool, name string, header []string) error {
 
 	b.Push(")")
 
-	return m.exec(b.Join(" "))
+	return b.Join(" ")
 }
 
 func (m *Machine) createInserter(name string, header []string) string {
