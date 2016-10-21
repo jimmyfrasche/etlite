@@ -102,7 +102,7 @@ func Import(s ImportSpec) Instruction {
 		}
 
 		ins := createInserter(s.Table, s.Header)
-		if err := m.bulkInsert(s.Table, ins, s.Limit, s.Offset); err != nil {
+		if err := m.bulkInsert(ctx, s.Table, ins, s.Limit, s.Offset); err != nil {
 			return err
 		}
 
@@ -151,7 +151,7 @@ func createInserter(name string, header []string) string {
 	return b.Join(" ")
 }
 
-func (m *Machine) bulkInsert(name, ins string, limit, offset int) error {
+func (m *Machine) bulkInsert(ctx context.Context, name, ins string, limit, offset int) error {
 	//make sure we have a decoder
 	dec := m.decoder
 	if dec == nil {
