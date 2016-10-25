@@ -63,10 +63,9 @@ func (c *compiler) compileInsertFrom(nm string, s *ast.SQL) {
 	c.compileImportCommon(imp)
 
 	//serialize insert statement and add VALUES (?, ..., ?);
-	b := make([]string, 3, len(s.Cols)+3)
+	b := make([]string, 2, len(s.Cols)+2)
 	b[0] = c.rewrite(s, nil, false)
-	b[1] = "VALUES"
-	b[2] = "("
+	b[1] = "VALUES ("
 	for range s.Cols[:len(s.Cols)-1] {
 		b = append(b, "?,")
 	}
