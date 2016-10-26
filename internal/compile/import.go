@@ -78,31 +78,49 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 	if tbl == "" {
 		panic(errint.New("compileSubImport requires table name"))
 	}
+	if i.Temporary {
+		panic(errusr.New(i.Pos(), "illegal to specify temporary for import in subquery"))
+	}
+	i.Temporary = true
 
 	c.compileImportCommon(i)
-	c.push(virt.Import(virt.ImportSpec{
-		Pos:    i.Pos(),
-		Temp:   true,
-		Table:  tbl,
-		Frame:  i.Frame,
-		Limit:  i.Limit,
-		Offset: i.Offset,
-	}))
+	if len(i.Header) == 0 {
+		c.push(virt.Import(virt.ImportSpec{
+			Pos:    i.Pos(),
+			Temp:   true,
+			Table:  tbl,
+			Frame:  i.Frame,
+			Limit:  i.Limit,
+			Offset: i.Offset,
+		}))
+	} else {
+		c.compileImportStatic(i)
+	}
 }
 
 func (c *compiler) compileImport(i *ast.Import) {
 	c.push(virt.Savepoint())
 	c.compileImportCommon(i)
-	c.push(virt.Import(virt.ImportSpec{
-		Pos:    i.Pos(),
-		Temp:   i.Temporary,
-		Table:  i.Table,
-		Frame:  i.Frame,
-		Header: i.Header,
-		Limit:  i.Limit,
-		Offset: i.Offset,
-	}))
+	if len(i.Header) == 0 {
+		c.push(virt.Import(virt.ImportSpec{
+			Pos:    i.Pos(),
+			Temp:   i.Temporary,
+			Table:  i.Table,
+			Frame:  i.Frame,
+			Limit:  i.Limit,
+			Offset: i.Offset,
+		}))
+	} else {
+		c.compileImportStatic(i)
+	}
 	c.push(virt.Release())
+}
+
+func (c *compiler) compileImportStatic(i *ast.Import) {
+	ddl := synth.CreateTable(i.Temporary, i.Table, i.Header)
+	c.push(virt.Exec(ddl))
+	ins := synth.Insert(i.Table, i.Header)
+	c.push(virt.InsertWith(i.Table, i.Frame, ins, i.Header, i.Limit, i.Offset))
 }
 
 func (c *compiler) compileImportCommon(i *ast.Import) {
