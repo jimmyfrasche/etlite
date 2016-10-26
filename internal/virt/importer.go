@@ -18,13 +18,6 @@ type ImportSpec struct {
 	Limit, Offset int
 }
 
-func (s ImportSpec) Valid() error {
-	if s.Table == "" {
-		return errint.New("table did not provide name")
-	}
-	return nil
-}
-
 func (m *Machine) readHeader(frame string, header []string) ([]string, error) {
 	dec := m.decoder
 	if dec == nil {
@@ -39,10 +32,6 @@ func (m *Machine) readHeader(frame string, header []string) ([]string, error) {
 
 func Import(s ImportSpec) Instruction {
 	return func(ctx context.Context, m *Machine) error {
-		if err := s.Valid(); err != nil {
-			return err
-		}
-
 		inHeader, err := m.readHeader(s.Frame, s.Header)
 		if err != nil {
 			return err
