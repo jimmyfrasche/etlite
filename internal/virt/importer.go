@@ -38,11 +38,7 @@ func Import(temp bool, table, frame string, limit, offset int) Instruction {
 		}
 
 		ins := synth.Insert(table, hdr)
-		if err := m.bulkInsert(ctx, table, ins, limit, offset); err != nil {
-			return err
-		}
-
-		return nil
+		return m.bulkInsert(ctx, table, ins, limit, offset)
 	}
 }
 
