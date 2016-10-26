@@ -43,25 +43,6 @@ func (c *compiler) compileCreateTableAsImport(nm string, s *ast.SQL) {
 	c.push(virt.Release())
 }
 
-func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
-	if i.Table != "" {
-		panic(errusr.New(i.Pos(), "illegal to specify table name for import in subquery"))
-	}
-	if tbl == "" {
-		panic(errint.New("compileSubImport requires table name"))
-	}
-
-	c.compileImportCommon(i)
-	c.push(virt.Import(virt.ImportSpec{
-		Pos:    i.Pos(),
-		Temp:   true,
-		Table:  tbl,
-		Frame:  i.Frame,
-		Limit:  i.Limit,
-		Offset: i.Offset,
-	}))
-}
-
 func (c *compiler) compileInsertFrom(nm string, s *ast.SQL) {
 	if len(s.Cols) == 0 {
 		panic(errusr.New(s.Pos(), "INSERT FROM IMPORT requires columns on INSERT"))
@@ -88,6 +69,25 @@ func (c *compiler) compileInsertFrom(nm string, s *ast.SQL) {
 
 	c.push(virt.InsertWith(nm, imp.Frame, ins, hdr, imp.Limit, imp.Offset))
 	c.push(virt.Release())
+}
+
+func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
+	if i.Table != "" {
+		panic(errusr.New(i.Pos(), "illegal to specify table name for import in subquery"))
+	}
+	if tbl == "" {
+		panic(errint.New("compileSubImport requires table name"))
+	}
+
+	c.compileImportCommon(i)
+	c.push(virt.Import(virt.ImportSpec{
+		Pos:    i.Pos(),
+		Temp:   true,
+		Table:  tbl,
+		Frame:  i.Frame,
+		Limit:  i.Limit,
+		Offset: i.Offset,
+	}))
 }
 
 func (c *compiler) compileImport(i *ast.Import) {
