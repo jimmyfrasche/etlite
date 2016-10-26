@@ -48,7 +48,6 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 		for i, imp := range s.Subqueries {
 			tables[i] = "[" + strconv.Itoa(i) + "]"
 			c.compileSubImport(imp, tables[i])
-			c.push(virt.ErrPos(imp.Pos()))
 		}
 	}
 	c.push(virt.ErrPos(s.Pos()))
@@ -82,6 +81,7 @@ func (c *compiler) compileTransactor(s *ast.SQL) {
 	//normalize name
 	name := strings.ToLower(fmtName(s.Name))
 
+	c.push(virt.ErrPos(s.Pos()))
 	//make sure these stack correctly
 	switch s.Kind {
 	default:

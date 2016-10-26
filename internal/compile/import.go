@@ -47,7 +47,6 @@ func (c *compiler) compileCreateTableAsImport(nm string, s *ast.SQL) {
 	hdr := colsOf(s)
 	imp.Header = hdr
 	c.compileImportCommon(imp)
-	c.push(virt.ErrPos(imp.Pos()))
 
 	ins := valuesFor([]string{"INSERT INTO", nm}, s)
 	c.push(virt.InsertWith(nm, imp.Frame, ins, hdr, imp.Limit, imp.Offset))
@@ -92,7 +91,6 @@ func (c *compiler) compileInsertFrom(nm string, s *ast.SQL) {
 	hdr := colsOf(s)
 	imp.Header = hdr
 	c.compileImportCommon(imp)
-	c.push(virt.ErrPos(imp.Pos()))
 
 	//serialize insert statement and add VALUES (?, ..., ?);
 	q := c.rewrite(s, nil, false)
@@ -174,4 +172,6 @@ func (c *compiler) compileImportCommon(i *ast.Import) {
 	} else {
 		c.rec(i.Table)
 	}
+
+	c.push(virt.ErrPos(i.Pos()))
 }

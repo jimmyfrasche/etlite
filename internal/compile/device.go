@@ -46,6 +46,7 @@ func (c *compiler) compileDevice(d ast.Device, read bool) {
 		return
 	}
 
+	c.push(virt.ErrPos(d.Pos()))
 	switch d := d.(type) {
 	default:
 		panic(errint.Newf("unrecognized Device type: %T", d))

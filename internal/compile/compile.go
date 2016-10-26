@@ -11,6 +11,7 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/savepoint"
+	"github.com/jimmyfrasche/etlite/internal/token"
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
@@ -80,7 +81,6 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 
 	firstStatement := true
 	for n := range from {
-		c.push(virt.ErrPos(n.Pos()))
 		switch n := n.(type) {
 		default:
 			return "", nil, errint.Newf("internal error: unknown node type %T", n)
@@ -110,6 +110,12 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 		firstStatement = false
 	}
 
+	if c.stack.Open() {
+		c.push(virt.ErrPos(token.Position{
+			Name: "<implicitly generated>",
+			Line: -1,
+		}))
+	}
 	if c.stack.InTransaction() {
 		c.push(virt.Exec("END TRANSACTION;"))
 	} else if c.stack.HasSavepoints() {

@@ -16,6 +16,7 @@ const (
 )
 
 func (c *compiler) compileFormat(f ast.Format, read bool) {
+	c.push(virt.ErrPos(f.Pos()))
 	switch f := f.(type) {
 	default:
 		panic(errint.Newf("unrecognized Format type: %T", f))
