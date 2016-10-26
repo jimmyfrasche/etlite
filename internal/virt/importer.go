@@ -14,7 +14,6 @@ type ImportSpec struct {
 	Pos           token.Position
 	Temp          bool
 	Table, Frame  string
-	Header        []string
 	Limit, Offset int
 }
 
@@ -32,25 +31,21 @@ func (m *Machine) readHeader(frame string, header []string) ([]string, error) {
 
 func Import(s ImportSpec) Instruction {
 	return func(ctx context.Context, m *Machine) error {
-		inHeader, err := m.readHeader(s.Frame, s.Header)
+		hdr, err := m.readHeader(s.Frame, nil)
 		if err != nil {
 			return err
 		}
 
-		//no header specified, use the one from the decoder
-		if len(s.Header) == 0 {
-			if len(inHeader) == 0 {
-				return errors.New("no header specified and none returned by " + m.decoder.Name() + " format")
-			}
-			s.Header = inHeader
+		if len(hdr) == 0 {
+			return errors.New("no header specified and none returned by " + m.decoder.Name() + " format")
 		}
 
-		ddl := synth.CreateTable(s.Temp, s.Table, s.Header)
+		ddl := synth.CreateTable(s.Temp, s.Table, hdr)
 		if err := m.exec(ddl); err != nil {
 			return err
 		}
 
-		ins := synth.Insert(s.Table, s.Header)
+		ins := synth.Insert(s.Table, hdr)
 		if err := m.bulkInsert(ctx, s.Table, ins, s.Limit, s.Offset); err != nil {
 			return err
 		}
