@@ -7,11 +7,9 @@ import (
 
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/synth"
-	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
 type ImportSpec struct {
-	Pos           token.Position
 	Temp          bool
 	Table, Frame  string
 	Limit, Offset int

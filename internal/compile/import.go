@@ -86,7 +86,6 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 	c.compileImportCommon(i)
 	if len(i.Header) == 0 {
 		c.push(virt.Import(virt.ImportSpec{
-			Pos:    i.Pos(),
 			Temp:   true,
 			Table:  tbl,
 			Frame:  i.Frame,
@@ -103,7 +102,6 @@ func (c *compiler) compileImport(i *ast.Import) {
 	c.compileImportCommon(i)
 	if len(i.Header) == 0 {
 		c.push(virt.Import(virt.ImportSpec{
-			Pos:    i.Pos(),
 			Temp:   i.Temporary,
 			Table:  i.Table,
 			Frame:  i.Frame,
