@@ -59,13 +59,6 @@ func Import(s ImportSpec) Instruction {
 			s.Header = inHeader
 		}
 
-		//internal tables can be created en masse so have to take care of their own savepointing.
-		if !s.Internal {
-			if err := m.savepoint(); err != nil {
-				return err
-			}
-		}
-
 		ddl := createTable(s.Temp || s.Internal, s.Table, s.Header)
 		if err := m.exec(ddl); err != nil {
 			return err
@@ -74,12 +67,6 @@ func Import(s ImportSpec) Instruction {
 		ins := createInserter(s.Table, s.Header)
 		if err := m.bulkInsert(ctx, s.Table, ins, s.Limit, s.Offset); err != nil {
 			return err
-		}
-
-		if !s.Internal {
-			if err := m.release(); err != nil {
-				return err
-			}
 		}
 
 		return nil

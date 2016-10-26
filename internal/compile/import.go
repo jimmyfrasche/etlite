@@ -103,6 +103,7 @@ func (c *compiler) compileInsertFrom(nm string, s *ast.SQL) {
 }
 
 func (c *compiler) compileImport(i *ast.Import) {
+	c.push(virt.Savepoint())
 	c.compileImportCommon(i)
 	c.push(virt.Import(virt.ImportSpec{
 		Pos:    i.Pos(),
@@ -113,6 +114,7 @@ func (c *compiler) compileImport(i *ast.Import) {
 		Limit:  i.Limit,
 		Offset: i.Offset,
 	}))
+	c.push(virt.Release())
 }
 
 func (c *compiler) compileImportCommon(i *ast.Import) {
