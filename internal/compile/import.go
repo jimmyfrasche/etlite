@@ -11,23 +11,47 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
-func (c *compiler) compileCreateTableAsImport(name, ddl string, i *ast.Import) {
-	if i.Table != "" {
-		panic(errusr.New(i.Pos(), "illegal to specify table name in create table from import"))
+func colsOf(s *ast.SQL) []string {
+	hdr := make([]string, len(s.Cols))
+	for i, v := range s.Cols {
+		hdr[i] = v.Value
 	}
-	if len(i.Header) != 0 {
-		panic(errusr.New(i.Pos(), "illegal to specify header in create table from import"))
+	return hdr
+}
+
+func valuesFor(q []string, s *ast.SQL) string {
+	q = append(q, "VALUES (")
+	for range s.Cols[:len(s.Cols)-1] {
+		q = append(q, "?,")
+	}
+	q = append(q, "?);")
+	return strings.Join(q, " ")
+}
+
+func (c *compiler) compileCreateTableAsImport(nm string, s *ast.SQL) {
+	imp := s.Subqueries[0]
+	s.Subqueries = nil //no rewrite placeholders
+	if imp.Table != "" {
+		panic(errusr.New(imp.Pos(), "illegal to specify table name in CREATE TABLE FROM IMPORT"))
+	}
+	if len(imp.Header) != 0 {
+		panic(errusr.New(imp.Pos(), "illegal to specify header in CREATE TABLE FROM IMPORT"))
 	}
 
-	c.compileImportCommon(i)
-	c.push(virt.Import(virt.ImportSpec{
-		Pos:    i.Pos(),
-		Table:  name,
-		Frame:  i.Frame,
-		Limit:  i.Limit,
-		Offset: i.Offset,
-		DDL:    ddl,
-	}))
+	c.push(virt.Savepoint())
+
+	ddl := c.rewrite(s, nil, false)
+	c.push(virt.ErrPos(s.Pos()))
+	c.push(virt.Exec(ddl))
+
+	hdr := colsOf(s)
+	imp.Header = hdr
+	c.compileImportCommon(imp)
+	c.push(virt.ErrPos(imp.Pos()))
+
+	ins := valuesFor([]string{"INSERT INTO", nm}, s)
+	c.push(virt.InsertWith(nm, imp.Frame, ins, hdr, imp.Limit, imp.Offset))
+	c.push(virt.Release())
 }
 
 func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
@@ -50,27 +74,29 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 }
 
 func (c *compiler) compileInsertFrom(nm string, s *ast.SQL) {
-	c.push(virt.Savepoint())
+	if len(s.Cols) == 0 {
+		panic(errusr.New(s.Pos(), "INSERT FROM IMPORT requires columns on INSERT"))
+	}
 
 	imp := s.Subqueries[0]
 	s.Subqueries = nil //no rewrite placeholders
-
-	hdr := make([]string, len(s.Cols))
-	for i, v := range s.Cols {
-		hdr[i] = v.Value
+	if imp.Table != "" {
+		panic(errusr.New(imp.Pos(), "illegal to specify table name in INSERT FROM IMPORT"))
 	}
-	imp.Header = hdr //XXX should we not propagate this header?
+	if len(imp.Header) != 0 {
+		panic(errusr.New(imp.Pos(), "illegal to specify header in INSERT FROM IMPORT"))
+	}
+
+	c.push(virt.Savepoint())
+
+	hdr := colsOf(s)
+	imp.Header = hdr
 	c.compileImportCommon(imp)
+	c.push(virt.ErrPos(imp.Pos()))
 
 	//serialize insert statement and add VALUES (?, ..., ?);
-	b := make([]string, 2, len(s.Cols)+2)
-	b[0] = c.rewrite(s, nil, false)
-	b[1] = "VALUES ("
-	for range s.Cols[:len(s.Cols)-1] {
-		b = append(b, "?,")
-	}
-	b = append(b, "?);")
-	ins := strings.Join(b, " ")
+	q := c.rewrite(s, nil, false)
+	ins := valuesFor([]string{q}, s)
 
 	c.push(virt.InsertWith(nm, imp.Frame, ins, hdr, imp.Limit, imp.Offset))
 	c.push(virt.Release())

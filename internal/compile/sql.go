@@ -32,10 +32,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	case ast.CreateTableFrom, ast.InsertFrom:
 		nm := fmtName(s.Name)
 		if s.Kind == ast.CreateTableFrom {
-			//TODO when we factor out insert stuff push create table then custom insert importer
-			i := s.Subqueries[0]
-			ddl := c.rewrite(s, nil, false)
-			c.compileCreateTableAsImport(nm, ddl, i)
+			c.compileCreateTableAsImport(nm, s)
 		} else {
 			c.compileInsertFrom(nm, s)
 		}

@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
-	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/token"
 	"github.com/jimmyfrasche/etlite/internal/virt/internal/builder"
 )
@@ -16,25 +15,11 @@ type ImportSpec struct {
 	Internal, Temp bool
 	Table, Frame   string
 	Header         []string
-	DDL            string
 	Limit, Offset  int
 }
 
 func (s ImportSpec) Valid() error {
-	if s.DDL != "" {
-		if s.Internal {
-			return errint.New("CREATE TABLE FROM marked as internal table")
-		}
-		if s.Temp {
-			return errint.New("CREATE TABLE FROM marked as temporary table (by system, not user)")
-		}
-		if len(s.Header) > 0 {
-			return errint.New("CREATE TABLE FROM provides user defined header")
-		}
-		if s.Table == "" {
-			return errint.New("CREATE TABLE FROM provides no table name")
-		}
-	} else if s.Internal && s.Temp {
+	if s.Internal && s.Temp {
 		return errint.New("internal table marked as temporary (by system, not user)")
 	}
 	if s.Table == "" {
@@ -61,25 +46,6 @@ func Import(s ImportSpec) Instruction {
 			return err
 		}
 
-		//CREATE TABLE FROM
-		if s.DDL != "" {
-			//build table and compute header
-			if err := m.exec(s.DDL); err != nil {
-				return errusr.Wrap(s.Pos, err)
-			}
-			p, err := m.conn.Prepare("SELECT * FROM " + s.Table)
-			if err != nil {
-				return err
-			}
-			s.Header = p.Columns()
-			if len(s.Header) == 0 {
-				return errint.New("could not retrieve columns in CREATE TABLE FROM")
-			}
-			if err := p.Close(); err != nil {
-				return err
-			}
-		}
-
 		inHeader, err := m.readHeader(s.Frame, s.Header)
 		if err != nil {
 			return err
@@ -100,12 +66,9 @@ func Import(s ImportSpec) Instruction {
 			}
 		}
 
-		//not a CREATE TABLE FROM so we need to make the table
-		if s.DDL == "" {
-			ddl := createTable(s.Temp || s.Internal, s.Table, s.Header)
-			if err := m.exec(ddl); err != nil {
-				return err
-			}
+		ddl := createTable(s.Temp || s.Internal, s.Table, s.Header)
+		if err := m.exec(ddl); err != nil {
+			return err
 		}
 
 		ins := createInserter(s.Table, s.Header)
