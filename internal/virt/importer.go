@@ -9,12 +9,6 @@ import (
 	"github.com/jimmyfrasche/etlite/internal/internal/synth"
 )
 
-type ImportSpec struct {
-	Temp          bool
-	Table, Frame  string
-	Limit, Offset int
-}
-
 func (m *Machine) readHeader(frame string, header []string) ([]string, error) {
 	dec := m.decoder
 	if dec == nil {
@@ -27,9 +21,9 @@ func (m *Machine) readHeader(frame string, header []string) ([]string, error) {
 	return inHeader, nil
 }
 
-func Import(s ImportSpec) Instruction {
+func Import(temp bool, table, frame string, limit, offset int) Instruction {
 	return func(ctx context.Context, m *Machine) error {
-		hdr, err := m.readHeader(s.Frame, nil)
+		hdr, err := m.readHeader(frame, nil)
 		if err != nil {
 			return err
 		}
@@ -38,13 +32,13 @@ func Import(s ImportSpec) Instruction {
 			return errors.New("no header specified and none returned by " + m.decoder.Name() + " format")
 		}
 
-		ddl := synth.CreateTable(s.Temp, s.Table, hdr)
+		ddl := synth.CreateTable(temp, table, hdr)
 		if err := m.exec(ddl); err != nil {
 			return err
 		}
 
-		ins := synth.Insert(s.Table, hdr)
-		if err := m.bulkInsert(ctx, s.Table, ins, s.Limit, s.Offset); err != nil {
+		ins := synth.Insert(table, hdr)
+		if err := m.bulkInsert(ctx, table, ins, limit, offset); err != nil {
 			return err
 		}
 

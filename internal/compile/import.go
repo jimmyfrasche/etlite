@@ -85,13 +85,7 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 
 	c.compileImportCommon(i)
 	if len(i.Header) == 0 {
-		c.push(virt.Import(virt.ImportSpec{
-			Temp:   true,
-			Table:  tbl,
-			Frame:  i.Frame,
-			Limit:  i.Limit,
-			Offset: i.Offset,
-		}))
+		c.push(virt.Import(true, tbl, i.Frame, i.Limit, i.Offset))
 	} else {
 		c.compileImportStatic(i)
 	}
@@ -101,13 +95,7 @@ func (c *compiler) compileImport(i *ast.Import) {
 	c.push(virt.Savepoint())
 	c.compileImportCommon(i)
 	if len(i.Header) == 0 {
-		c.push(virt.Import(virt.ImportSpec{
-			Temp:   i.Temporary,
-			Table:  i.Table,
-			Frame:  i.Frame,
-			Limit:  i.Limit,
-			Offset: i.Offset,
-		}))
+		c.push(virt.Import(i.Temporary, i.Table, i.Frame, i.Limit, i.Offset))
 	} else {
 		c.compileImportStatic(i)
 	}
