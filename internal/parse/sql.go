@@ -486,25 +486,24 @@ func (p *sqlParser) insert(t token.Value, subq, etl, arg bool) token.Value {
 	p.push(t)
 
 	t = p.tmpCheck(p.next())
-	if t.Kind != token.LParen {
-		panic(p.unexpected(t))
-	}
-	p.push(t)
-
-loop:
-	for {
-		t = p.expectLitOrStr()
-		p.sql.Cols = append(p.sql.Cols, t)
+	if t.Kind == token.LParen {
 		p.push(t)
-		t = p.next()
-		switch {
-		default:
-			panic(p.unexpected(t))
-		case t.Literal(","):
+
+	loop:
+		for {
+			t = p.expectLitOrStr()
+			p.sql.Cols = append(p.sql.Cols, t)
 			p.push(t)
-		case t.Kind == token.RParen:
-			p.push(t)
-			break loop
+			t = p.next()
+			switch {
+			default:
+				panic(p.unexpected(t))
+			case t.Literal(","):
+				p.push(t)
+			case t.Kind == token.RParen:
+				p.push(t)
+				break loop
+			}
 		}
 	}
 
