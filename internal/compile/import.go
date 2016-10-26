@@ -1,13 +1,12 @@
 package compile
 
 import (
-	"strings"
-
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/digital"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/internal/escape"
+	"github.com/jimmyfrasche/etlite/internal/internal/synth"
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
 
@@ -17,15 +16,6 @@ func colsOf(s *ast.SQL) []string {
 		hdr[i] = v.Value
 	}
 	return hdr
-}
-
-func valuesFor(q []string, s *ast.SQL) string {
-	q = append(q, "VALUES (")
-	for range s.Cols[:len(s.Cols)-1] {
-		q = append(q, "?,")
-	}
-	q = append(q, "?);")
-	return strings.Join(q, " ")
 }
 
 func (c *compiler) compileCreateTableAsImport(nm string, s *ast.SQL) {
@@ -48,7 +38,7 @@ func (c *compiler) compileCreateTableAsImport(nm string, s *ast.SQL) {
 	imp.Header = hdr
 	c.compileImportCommon(imp)
 
-	ins := valuesFor([]string{"INSERT INTO", nm}, s)
+	ins := synth.Insert(nm, hdr)
 	c.push(virt.InsertWith(nm, imp.Frame, ins, hdr, imp.Limit, imp.Offset))
 	c.push(virt.Release())
 }
@@ -94,7 +84,7 @@ func (c *compiler) compileInsertFrom(nm string, s *ast.SQL) {
 
 	//serialize insert statement and add VALUES (?, ..., ?);
 	q := c.rewrite(s, nil, false)
-	ins := valuesFor([]string{q}, s)
+	ins := synth.Values(q, hdr)
 
 	c.push(virt.InsertWith(nm, imp.Frame, ins, hdr, imp.Limit, imp.Offset))
 	c.push(virt.Release())

@@ -6,8 +6,8 @@ import (
 	"io"
 
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
+	"github.com/jimmyfrasche/etlite/internal/internal/synth"
 	"github.com/jimmyfrasche/etlite/internal/token"
-	"github.com/jimmyfrasche/etlite/internal/virt/internal/builder"
 )
 
 type ImportSpec struct {
@@ -59,53 +59,18 @@ func Import(s ImportSpec) Instruction {
 			s.Header = inHeader
 		}
 
-		ddl := createTable(s.Temp || s.Internal, s.Table, s.Header)
+		ddl := synth.CreateTable(s.Temp || s.Internal, s.Table, s.Header)
 		if err := m.exec(ddl); err != nil {
 			return err
 		}
 
-		ins := createInserter(s.Table, s.Header)
+		ins := synth.Insert(s.Table, s.Header)
 		if err := m.bulkInsert(ctx, s.Table, ins, s.Limit, s.Offset); err != nil {
 			return err
 		}
 
 		return nil
 	}
-}
-
-func createTable(temp bool, name string, header []string) string {
-	b := builder.New("CREATE")
-
-	if temp {
-		b.Push("TEMPORARY")
-	}
-
-	b.Push("TABLE", name, "(")
-
-	b.CSV(header, func(h string) {
-		b.Push(h, "TEXT")
-	})
-
-	b.Push(")")
-
-	return b.Join(" ")
-}
-
-func createInserter(name string, header []string) string {
-	b := builder.New("INSERT INTO", name, "(")
-
-	b.CSV(header, func(h string) {
-		b.Push(h)
-	})
-
-	b.Push(") VALUES (")
-
-	b.CSV(header, func(string) {
-		b.Push("?")
-	})
-	b.Push(")")
-
-	return b.Join(" ")
 }
 
 func InsertWith(table, frame, inserter string, header []string, limit, offset int) Instruction {
