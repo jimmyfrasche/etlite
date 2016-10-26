@@ -53,12 +53,12 @@ func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 
 	c.compileImportCommon(i)
 	c.push(virt.Import(virt.ImportSpec{
-		Pos:      i.Pos(),
-		Internal: true,
-		Table:    tbl,
-		Frame:    i.Frame,
-		Limit:    i.Limit,
-		Offset:   i.Offset,
+		Pos:    i.Pos(),
+		Temp:   true,
+		Table:  tbl,
+		Frame:  i.Frame,
+		Limit:  i.Limit,
+		Offset: i.Offset,
 	}))
 }
 

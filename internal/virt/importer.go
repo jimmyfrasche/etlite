@@ -11,17 +11,14 @@ import (
 )
 
 type ImportSpec struct {
-	Pos            token.Position
-	Internal, Temp bool
-	Table, Frame   string
-	Header         []string
-	Limit, Offset  int
+	Pos           token.Position
+	Temp          bool
+	Table, Frame  string
+	Header        []string
+	Limit, Offset int
 }
 
 func (s ImportSpec) Valid() error {
-	if s.Internal && s.Temp {
-		return errint.New("internal table marked as temporary (by system, not user)")
-	}
 	if s.Table == "" {
 		return errint.New("table did not provide name")
 	}
@@ -59,7 +56,7 @@ func Import(s ImportSpec) Instruction {
 			s.Header = inHeader
 		}
 
-		ddl := synth.CreateTable(s.Temp || s.Internal, s.Table, s.Header)
+		ddl := synth.CreateTable(s.Temp, s.Table, s.Header)
 		if err := m.exec(ddl); err != nil {
 			return err
 		}
