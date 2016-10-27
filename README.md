@@ -32,7 +32,9 @@ As a statement, IMPORT creates a table and imports data into it.
 
 IMPORT may be used in most subqueries (outside of triggers), which creates and fills temporary tables, executes the desugared SQLite then drops the tables.
 
-The special form CREATE TABLE t (cols) FROM IMPORT imports data directly into t.
+The special form CREATE TABLE t (cols) FROM IMPORT [...] imports data directly into t.
+
+The special from INSERT INTO t (cols) USING IMPORT [...] imports directly into t without creating any tables. It is required to specify the cols on the INSERT portion.
 
 ASSERT ends the script if the scalar subquery returns anything other than 1 and prints message. If instead of a subquery an @ placeholder is given, it asserts the existence of that arg or env variable.
 

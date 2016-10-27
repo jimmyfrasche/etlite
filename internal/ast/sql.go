@@ -17,7 +17,7 @@ const (
 	Query
 	Exec
 	CreateTableFrom
-	InsertFrom
+	InsertUsing
 	Savepoint
 	Release
 	BeginTransaction

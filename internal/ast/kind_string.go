@@ -4,9 +4,9 @@ package ast
 
 import "fmt"
 
-const _Kind_name = "InvalidQueryExecCreateTableFromInsertFromSavepointReleaseBeginTransactionCommit"
+const _Kind_name = "InvalidQueryExecCreateTableFromInsertUsingSavepointReleaseBeginTransactionCommit"
 
-var _Kind_index = [...]uint8{0, 7, 12, 16, 31, 41, 50, 57, 73, 79}
+var _Kind_index = [...]uint8{0, 7, 12, 16, 31, 42, 51, 58, 74, 80}
 
 func (i Kind) String() string {
 	if i < 0 || i >= Kind(len(_Kind_index)-1) {

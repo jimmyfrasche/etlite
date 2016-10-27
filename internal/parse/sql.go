@@ -53,7 +53,7 @@ func (p *sqlParser) subImport(t token.Value, subq, etl bool) token.Value {
 	return t
 }
 
-//specialSubImport is used only by CreateTableFrom and InsertFrom
+//specialSubImport is used only by CreateTableFrom and InsertUsing
 func (p *sqlParser) specialSubImport(t token.Value) token.Value {
 	var n ast.Node
 	n, t = p.importStmt(t, false, false, nil)
@@ -518,8 +518,8 @@ func (p *sqlParser) insert(t token.Value, subq, etl, arg bool) token.Value {
 		t = p.expect(token.Semicolon)
 		p.push(t)
 		return t //this isn't used anywhere, but needed for symmetry
-	case "FROM":
-		p.sql.Kind = ast.InsertFrom
+	case "USING":
+		p.sql.Kind = ast.InsertUsing
 		//we don't consume from and leave the ast for the insert hanging,
 		//so that the compiler can add the (?, ?, ..., ?); for however many
 		//placeholders are needed.

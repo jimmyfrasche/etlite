@@ -43,18 +43,18 @@ func (c *compiler) compileCreateTableAsImport(nm string, s *ast.SQL) {
 	c.push(virt.Release())
 }
 
-func (c *compiler) compileInsertFrom(nm string, s *ast.SQL) {
+func (c *compiler) compileInsertUsing(nm string, s *ast.SQL) {
 	if len(s.Cols) == 0 {
-		panic(errusr.New(s.Pos(), "INSERT FROM IMPORT requires columns on INSERT"))
+		panic(errusr.New(s.Pos(), "INSERT USING IMPORT requires columns on INSERT"))
 	}
 
 	imp := s.Subqueries[0]
 	s.Subqueries = nil //no rewrite placeholders
 	if imp.Table != "" {
-		panic(errusr.New(imp.Pos(), "illegal to specify table name in INSERT FROM IMPORT"))
+		panic(errusr.New(imp.Pos(), "illegal to specify table name in INSERT USING IMPORT"))
 	}
 	if len(imp.Header) != 0 {
-		panic(errusr.New(imp.Pos(), "illegal to specify header in INSERT FROM IMPORT"))
+		panic(errusr.New(imp.Pos(), "illegal to specify header in INSERT USING IMPORT"))
 	}
 
 	c.push(virt.Savepoint())

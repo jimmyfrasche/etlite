@@ -20,7 +20,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 		}
 		c.compileTransactor(s)
 		return
-	case ast.CreateTableFrom, ast.InsertFrom:
+	case ast.CreateTableFrom, ast.InsertUsing:
 		if ls := len(s.Subqueries); ls != 1 {
 			panic(errint.Newf("%s must have exactly 1 etl subquery, found %d", s.Kind, ls))
 		}
@@ -29,12 +29,12 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 	}
 
 	switch s.Kind {
-	case ast.CreateTableFrom, ast.InsertFrom:
+	case ast.CreateTableFrom, ast.InsertUsing:
 		nm := fmtName(s.Name)
 		if s.Kind == ast.CreateTableFrom {
 			c.compileCreateTableAsImport(nm, s)
 		} else {
-			c.compileInsertFrom(nm, s)
+			c.compileInsertUsing(nm, s)
 		}
 		return
 	}
