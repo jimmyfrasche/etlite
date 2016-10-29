@@ -11,7 +11,7 @@ import (
 type Import struct {
 	token.Position
 	Temporary bool
-	Table     string
+	Name      Name
 	Header    []string
 	Device    Device
 	Format    Format
@@ -52,8 +52,8 @@ func (i *Import) print(w *writer.Writer) {
 		w.Str("TEMPORARY ")
 	}
 
-	if len(i.Table) > 0 {
-		w.Str(i.Table).Sp()
+	if !i.Name.Empty() {
+		w.Stringer(i.Name).Sp()
 	}
 
 	if len(i.Header) > 0 {

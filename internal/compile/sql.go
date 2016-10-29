@@ -30,7 +30,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 
 	switch s.Kind {
 	case ast.CreateTableFrom, ast.InsertUsing:
-		nm := fmtName(s.Name)
+		nm := s.Name.String()
 		if s.Kind == ast.CreateTableFrom {
 			c.compileCreateTableAsImport(nm, s)
 		} else {
@@ -69,17 +69,17 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 }
 
 func (c *compiler) compileTransactor(s *ast.SQL) {
-	if len(s.Name) > 1 {
+	if s.Name.HasSchema() {
 		panic(errint.Newf("impossible savepoint name %#v", s.Name))
 	}
-	if (s.Kind == ast.Savepoint || s.Kind == ast.Release) && len(s.Name) == 0 {
+	if (s.Kind == ast.Savepoint || s.Kind == ast.Release) && s.Name.Empty() {
 		panic(errint.New("no savepoint name provided by parser"))
 	}
 
 	q := c.rewrite(s, nil, false)
 
 	//normalize name
-	name := strings.ToLower(fmtName(s.Name))
+	name := strings.ToLower(s.Name.Object())
 
 	c.push(virt.ErrPos(s.Pos()))
 	//make sure these stack correctly

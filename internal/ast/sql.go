@@ -31,8 +31,8 @@ const (
 type SQL struct {
 	Kind       Kind
 	Subqueries []*Import
-	Name       []token.Value
-	Cols       []token.Value //recorded for INSERT
+	Name       Name
+	Cols       []token.Value //recorded for INSERT and CREATE TABLE
 	Tokens     []token.Value
 }
 

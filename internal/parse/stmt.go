@@ -1,10 +1,8 @@
 package parse
 
 import (
-	"strings"
-
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/parse/internal/fmtname"
+	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
 	"github.com/jimmyfrasche/etlite/internal/token"
 )
 
@@ -113,20 +111,19 @@ func (p *parser) importStmt(t token.Value, subquery, compound bool, sql *ast.SQL
 	}
 
 	if t.Kind == token.Literal && !t.AnyLiteral("FROM", "WITH", "FRAME", "LIMIT", "OFFSET", "UNION", "INTERSECT", "EXCEPT") {
-		var name []token.Value
-		t, name = p.name(t)
-		if len(name) == 3 {
-			space, _ := name[0].Unescape()
-			if strings.ToUpper(space) == "TEMP" {
-				i.Temporary = true
-				name = name[2:]
-			}
+		var name ast.Name
+		t, _, name = p.name(t)
+		if name.OnTemp() {
+			i.Temporary = true
+			name = name.WithoutSchema()
 		}
-		s, err := fmtname.ToString(name)
-		if err != nil {
-			panic(err)
+		if i.Temporary && name.DigitalObject() {
+			panic(errusr.New(name.ObjectToken().Position, "cannot import into digital temporary table: reserved by system"))
 		}
-		i.Name = s
+		if name.Reserved() {
+			panic(errusr.Newf(name.ObjectToken().Position, "cannot import into %s", name))
+		}
+		i.Name = name
 	}
 
 	//slurp header

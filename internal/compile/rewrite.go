@@ -19,31 +19,6 @@ func parseArg(t token.Value) (s string, isNum bool) {
 	return
 }
 
-func fmtName(name []token.Value) string {
-	switch ln := len(name); ln {
-	case 1, 3:
-		//okay
-	default:
-		panic(errint.Newf("extracted name must have 1 or 3 tokens, got: %d", ln))
-	}
-	if len(name) == 3 && !name[1].Literal(".") {
-		panic(errint.Newf("extracted name has %q instead of '.'", name[1]))
-	}
-	s := fmtNameToken(name[0])
-	if len(name) == 3 {
-		s += "." + fmtNameToken(name[2])
-	}
-	return s
-}
-
-func fmtNameToken(t token.Value) string {
-	s, ok := t.Unescape()
-	if !ok {
-		panic(errint.Newf("expected string or literal in extracted name, got %s", t))
-	}
-	return escape.String(s)
-}
-
 func (c *compiler) appendSynth(qp string) {
 	c.r.Tokens = append(c.r.Tokens, token.Value{
 		Kind:  token.Literal,

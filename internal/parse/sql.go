@@ -1,8 +1,6 @@
 package parse
 
 import (
-	"strings"
-
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/digital"
 	"github.com/jimmyfrasche/etlite/internal/token"
@@ -61,44 +59,30 @@ func (p *sqlParser) specialSubImport(t token.Value) token.Value {
 	return t
 }
 
-func (p *sqlParser) name(t token.Value) (token.Value, []token.Value) {
-	t, name := p.parser.name(t)
+func (p *sqlParser) name(t token.Value) (token.Value, ast.Name) {
+	t, tokens, name := p.parser.name(t)
+	p.extend(tokens...)
 	p.sql.Name = name
 	return t, name
 }
 
-func (p *sqlParser) chkDigTmp(name []token.Value) {
-	if len(name) == 3 {
-		s, _ := name[0].Unescape()
-		if strings.ToUpper(s) == "TEMP" {
-			s, _ = name[2].Unescape()
-			if digital.String(s) {
-				panic(p.errMsg(name[0], "digital temporary table names are reserved by etlite"))
-			}
-		}
+func (p *sqlParser) chkDigTmp(name ast.Name) {
+	if name.OnTemp() && name.DigitalObject() {
+		panic(p.errMsg(name.ObjectToken(), "digital temporary table names are reserved by etlite"))
 	}
 }
 
 func (p *sqlParser) tmpCheck(t token.Value) token.Value {
 	t, name := p.name(t)
 	p.chkDigTmp(name)
-	p.extend(name...)
 	return t
 }
 
-func (p *sqlParser) chkSysReserved(name []token.Value) {
-	if len(name) == 3 {
-		s, _ := name[0].Unescape()
+func (p *sqlParser) chkSysReserved(name ast.Name) {
+	if name.Reserved() {
 		//this fails if it relies on object resolution but catches some misuse.
 		//TODO could insert a flag in the AST to check sys names exist if length 1 and name[0] ∈ {args, env}?
-		if strings.ToUpper(s) == "SYS" {
-			s, _ = name[2].Unescape()
-			s = strings.ToUpper(s)
-			switch s {
-			case "ARGS", "ENV":
-				panic(p.errMsg(name[0], "sys.args and sys.env are reserved by etlite"))
-			}
-		}
+		panic(p.errMsg(name.ObjectToken(), "sys.args and sys.env are reserved by etlite"))
 	}
 }
 
@@ -106,7 +90,6 @@ func (p *sqlParser) tmpOrSysCheck(t token.Value) token.Value {
 	t, name := p.name(t)
 	p.chkDigTmp(name)
 	p.chkSysReserved(name)
-	p.extend(name...)
 	return t
 }
 
@@ -288,7 +271,7 @@ func (p *sqlParser) savepoint(t token.Value) {
 	if digital.String(s) {
 		panic(p.errMsg(t, "digital savepoint names are reserved by etlite"))
 	}
-	p.sql.Name = []token.Value{t}
+	p.sql.Name = astName(t)
 	p.push(t)
 	p.expect(token.Semicolon)
 }
@@ -301,7 +284,7 @@ func (p *sqlParser) release(t token.Value) {
 		p.push(t)
 		t = p.expectLitOrStr()
 	}
-	p.sql.Name = []token.Value{t}
+	p.sql.Name = astName(t)
 	p.push(t)
 	p.expect(token.Semicolon)
 }
@@ -582,24 +565,16 @@ func (p *sqlParser) table(t token.Value, temp bool) {
 
 	//get the name in case this is CREATE TABLE FROM
 	//and validate that it's not reserved.
-	var name []token.Value
+	var name ast.Name
 	t, name = p.name(t)
-	p.extend(name...)
-	if len(name) == 3 {
-		s, _ := name[0].Unescape()
-		if strings.ToUpper(s) == "TEMP" {
-			if temp {
-				panic(p.unexpected(name[0]))
-			}
-			temp = true
+	if name.OnTemp() {
+		if temp {
+			panic(p.errMsg(name.SchemaToken(), "temp schema specified on table already defined as temporary"))
 		}
+		temp = true
 	}
-	if temp {
-		last := name[len(name)-1]
-		s, _ := last.Unescape()
-		if digital.String(s) {
-			panic(p.errMsg(last, "digital temporary table names are reserved by etlite"))
-		}
+	if temp && name.DigitalObject() {
+		panic(p.errMsg(name.ObjectToken(), "digital temporary table names are reserved by etlite"))
 	}
 	p.sql.Name = name
 

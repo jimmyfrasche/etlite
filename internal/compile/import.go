@@ -2,10 +2,8 @@ package compile
 
 import (
 	"github.com/jimmyfrasche/etlite/internal/ast"
-	"github.com/jimmyfrasche/etlite/internal/internal/digital"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
 	"github.com/jimmyfrasche/etlite/internal/internal/errusr"
-	"github.com/jimmyfrasche/etlite/internal/internal/escape"
 	"github.com/jimmyfrasche/etlite/internal/internal/synth"
 	"github.com/jimmyfrasche/etlite/internal/virt"
 )
@@ -21,7 +19,7 @@ func colsOf(s *ast.SQL) []string {
 func (c *compiler) compileCreateTableAsImport(nm string, s *ast.SQL) {
 	imp := s.Subqueries[0]
 	s.Subqueries = nil //no rewrite placeholders
-	if imp.Table != "" {
+	if !imp.Name.Empty() {
 		panic(errusr.New(imp.Pos(), "illegal to specify table name in CREATE TABLE FROM IMPORT"))
 	}
 	if len(imp.Header) != 0 {
@@ -50,7 +48,7 @@ func (c *compiler) compileInsertUsing(nm string, s *ast.SQL) {
 
 	imp := s.Subqueries[0]
 	s.Subqueries = nil //no rewrite placeholders
-	if imp.Table != "" {
+	if !imp.Name.Empty() {
 		panic(errusr.New(imp.Pos(), "illegal to specify table name in INSERT USING IMPORT"))
 	}
 	if len(imp.Header) != 0 {
@@ -72,7 +70,7 @@ func (c *compiler) compileInsertUsing(nm string, s *ast.SQL) {
 }
 
 func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
-	if i.Table != "" {
+	if !i.Name.Empty() {
 		panic(errusr.New(i.Pos(), "illegal to specify table name for import in subquery"))
 	}
 	if tbl == "" {
@@ -95,7 +93,7 @@ func (c *compiler) compileImport(i *ast.Import) {
 	c.push(virt.Savepoint())
 	c.compileImportCommon(i)
 	if len(i.Header) == 0 {
-		c.push(virt.Import(i.Temporary, i.Table, i.Frame, i.Limit, i.Offset))
+		c.push(virt.Import(i.Temporary, i.Name.String(), i.Frame, i.Limit, i.Offset))
 	} else {
 		c.compileImportStatic(i)
 	}
@@ -103,10 +101,11 @@ func (c *compiler) compileImport(i *ast.Import) {
 }
 
 func (c *compiler) compileImportStatic(i *ast.Import) {
-	ddl := synth.CreateTable(i.Temporary, i.Table, i.Header)
+	tbl := i.Name.String()
+	ddl := synth.CreateTable(i.Temporary, tbl, i.Header)
 	c.push(virt.Exec(ddl))
-	ins := synth.Insert(i.Table, i.Header)
-	c.push(virt.InsertWith(i.Table, i.Frame, ins, i.Header, i.Limit, i.Offset))
+	ins := synth.Insert(tbl, i.Header)
+	c.push(virt.InsertWith(tbl, i.Frame, ins, i.Header, i.Limit, i.Offset))
 }
 
 func (c *compiler) compileImportCommon(i *ast.Import) {
@@ -149,22 +148,21 @@ func (c *compiler) compileImportCommon(i *ast.Import) {
 		c.frname = i.Frame
 	}
 
-	if i.Table == "" {
+	if i.Name.Empty() {
 		if c.dname != "" && !c.nameUsed(c.dname) {
 			c.rec(c.dname)
-			i.Table = c.dname
+			i.Name = ast.NameFromString(c.dname)
 		} else if c.frname != "" && !c.nameUsed(c.frname) {
 			c.rec(c.frname)
-			i.Table = c.frname
+			i.Name = ast.NameFromString(c.frname)
 		} else {
 			panic(errusr.New(i.Pos(), "cannot derive table name"))
 		}
-		if i.Temporary && digital.String(i.Table) {
+		if i.Temporary && i.Name.DigitalObject() {
 			panic(errusr.New(i.Pos(), "derived name for temp table is numeric, which is reserved"))
 		}
-		i.Table = escape.String(i.Table)
-	} else {
-		c.rec(i.Table)
+	} else if !i.Name.HasSchema() {
+		c.rec(i.Name.Object())
 	}
 
 	c.push(virt.ErrPos(i.Pos()))
