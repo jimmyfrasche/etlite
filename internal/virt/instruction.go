@@ -117,7 +117,7 @@ func UseFileInput(fname string) Instruction {
 
 func Savepoint() Instruction {
 	return func(ctx context.Context, m *Machine) error {
-		m.stack.Savepoint("[1]")
+		m.stack.Savepoint("1")
 		return m.savepointStmt.Exec()
 	}
 }
@@ -127,7 +127,7 @@ func Release() Instruction {
 		if err := m.releaseStmt.Exec(); err != nil {
 			return err
 		}
-		m.stack.Release("[1]")
+		m.stack.Release("1")
 		return nil
 	}
 }

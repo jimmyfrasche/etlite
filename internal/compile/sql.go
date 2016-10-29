@@ -2,7 +2,6 @@ package compile
 
 import (
 	"strconv"
-	"strings"
 
 	"github.com/jimmyfrasche/etlite/internal/ast"
 	"github.com/jimmyfrasche/etlite/internal/internal/errint"
@@ -78,8 +77,7 @@ func (c *compiler) compileTransactor(s *ast.SQL) {
 
 	q := c.rewrite(s, nil, false)
 
-	//normalize name
-	name := strings.ToLower(s.Name.Object())
+	name := s.Name.Object()
 
 	c.push(virt.ErrPos(s.Pos()))
 	//make sure these stack correctly
