@@ -27,7 +27,7 @@ func (u User) Error() string {
 //Wrap an error with the position information in p.
 //
 //Wrapping io.EOF changes the error to io.ErrUnexpectedEOF.
-func Wrap(p token.Position, err error) error {
+func Wrap(p token.Poser, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -35,17 +35,17 @@ func Wrap(p token.Position, err error) error {
 		return Wrap(p, io.ErrUnexpectedEOF)
 	}
 	return &User{
-		p:   p,
+		p:   p.Pos(),
 		err: err,
 	}
 }
 
 //New creates a new user error from a string.
-func New(p token.Position, s string) error {
+func New(p token.Poser, s string) error {
 	return Wrap(p, errors.New(s))
 }
 
 //Newf creates a new formatted user error.
-func Newf(p token.Position, spec string, vs ...interface{}) error {
+func Newf(p token.Poser, spec string, vs ...interface{}) error {
 	return Wrap(p, fmt.Errorf(spec, vs...))
 }
