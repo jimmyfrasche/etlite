@@ -16,7 +16,7 @@ const (
 )
 
 func (c *compiler) compileFormat(f ast.Format, read bool) {
-	c.push(virt.ErrPos(f.Pos()))
+	c.push(virt.ErrPos(f))
 	switch f := f.(type) {
 	default:
 		panic(errint.Newf("unrecognized Format type: %T", f))
@@ -37,10 +37,10 @@ func (c *compiler) compileFormat(f ast.Format, read bool) {
 
 func (c *compiler) formatCSV(f *ast.FormatCSV, read bool) {
 	if f.Quote > 0 { //XXX unsupported currently since encoding/csv doesn't do that
-		panic(errusr.New(f.Pos(), "specifying quotation for CSV is currently unsupported :("))
+		panic(errusr.New(f, "specifying quotation for CSV is currently unsupported :("))
 	}
 	if f.Line != 0 && !read {
-		panic(errusr.New(f.Pos(), "specifying line ending when writing CSV is unsupported"))
+		panic(errusr.New(f, "specifying line ending when writing CSV is unsupported"))
 	}
 
 	useCRLF := false

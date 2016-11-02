@@ -90,7 +90,7 @@ func Nodes(from <-chan ast.Node, usedStdin bool) (db string, to []virt.Instructi
 
 		case *ast.Use:
 			if !firstStatement {
-				return "", nil, errusr.New(n.Pos(), "USE must be first statement")
+				return "", nil, errusr.New(n, "USE must be first statement")
 			}
 			db = n.DB
 

@@ -20,16 +20,16 @@ func (c *compiler) compileCreateTableAsImport(nm string, s *ast.SQL) {
 	imp := s.Subqueries[0]
 	s.Subqueries = nil //no rewrite placeholders
 	if !imp.Name.Empty() {
-		panic(errusr.New(imp.Pos(), "illegal to specify table name in CREATE TABLE FROM IMPORT"))
+		panic(errusr.New(imp, "illegal to specify table name in CREATE TABLE FROM IMPORT"))
 	}
 	if len(imp.Header) != 0 {
-		panic(errusr.New(imp.Pos(), "illegal to specify header in CREATE TABLE FROM IMPORT"))
+		panic(errusr.New(imp, "illegal to specify header in CREATE TABLE FROM IMPORT"))
 	}
 
 	c.push(virt.Savepoint())
 
 	ddl := c.rewrite(s, nil, false)
-	c.push(virt.ErrPos(s.Pos()))
+	c.push(virt.ErrPos(s))
 	c.push(virt.Exec(ddl))
 
 	hdr := colsOf(s)
@@ -43,16 +43,16 @@ func (c *compiler) compileCreateTableAsImport(nm string, s *ast.SQL) {
 
 func (c *compiler) compileInsertUsing(nm string, s *ast.SQL) {
 	if len(s.Cols) == 0 {
-		panic(errusr.New(s.Pos(), "INSERT USING IMPORT requires columns on INSERT"))
+		panic(errusr.New(s, "INSERT USING IMPORT requires columns on INSERT"))
 	}
 
 	imp := s.Subqueries[0]
 	s.Subqueries = nil //no rewrite placeholders
 	if !imp.Name.Empty() {
-		panic(errusr.New(imp.Pos(), "illegal to specify table name in INSERT USING IMPORT"))
+		panic(errusr.New(imp, "illegal to specify table name in INSERT USING IMPORT"))
 	}
 	if len(imp.Header) != 0 {
-		panic(errusr.New(imp.Pos(), "illegal to specify header in INSERT USING IMPORT"))
+		panic(errusr.New(imp, "illegal to specify header in INSERT USING IMPORT"))
 	}
 
 	c.push(virt.Savepoint())
@@ -71,13 +71,13 @@ func (c *compiler) compileInsertUsing(nm string, s *ast.SQL) {
 
 func (c *compiler) compileSubImport(i *ast.Import, tbl string) {
 	if !i.Name.Empty() {
-		panic(errusr.New(i.Pos(), "illegal to specify table name for import in subquery"))
+		panic(errusr.New(i, "illegal to specify table name for import in subquery"))
 	}
 	if tbl == "" {
 		panic(errint.New("compileSubImport requires table name"))
 	}
 	if i.Temporary {
-		panic(errusr.New(i.Pos(), "illegal to specify temporary for import in subquery"))
+		panic(errusr.New(i, "illegal to specify temporary for import in subquery"))
 	}
 	i.Temporary = true
 
@@ -114,10 +114,10 @@ func (c *compiler) compileImportCommon(i *ast.Import) {
 	if c.usedStdin {
 		if i.Device != nil {
 			if _, ok := i.Device.(*ast.DeviceStdio); ok {
-				panic(errusr.New(i.Pos(), "script needs to read from stdin but script itself was read from stdin"))
+				panic(errusr.New(i, "script needs to read from stdin but script itself was read from stdin"))
 			}
 		} else if !c.hadDevice {
-			panic(errusr.New(i.Pos(), "no input device specified: default stdin used for script input"))
+			panic(errusr.New(i, "no input device specified: default stdin used for script input"))
 		}
 	}
 
@@ -156,14 +156,14 @@ func (c *compiler) compileImportCommon(i *ast.Import) {
 			c.rec(c.frname)
 			i.Name = ast.NameFromString(c.frname)
 		} else {
-			panic(errusr.New(i.Pos(), "cannot derive table name"))
+			panic(errusr.New(i, "cannot derive table name"))
 		}
 		if i.Temporary && i.Name.DigitalObject() {
-			panic(errusr.New(i.Pos(), "derived name for temp table is numeric, which is reserved"))
+			panic(errusr.New(i, "derived name for temp table is numeric, which is reserved"))
 		}
 	} else if !i.Name.HasSchema() {
 		c.rec(i.Name.Object())
 	}
 
-	c.push(virt.ErrPos(i.Pos()))
+	c.push(virt.ErrPos(i))
 }

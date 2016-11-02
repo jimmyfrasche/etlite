@@ -49,7 +49,7 @@ func (c *compiler) compileSQL(s *ast.SQL) {
 			c.compileSubImport(imp, tables[i])
 		}
 	}
-	c.push(virt.ErrPos(s.Pos()))
+	c.push(virt.ErrPos(s))
 
 	q := c.rewrite(s, tables, false)
 
@@ -79,7 +79,7 @@ func (c *compiler) compileTransactor(s *ast.SQL) {
 
 	name := s.Name.Object()
 
-	c.push(virt.ErrPos(s.Pos()))
+	c.push(virt.ErrPos(s))
 	//make sure these stack correctly
 	switch s.Kind {
 	default:
@@ -87,13 +87,13 @@ func (c *compiler) compileTransactor(s *ast.SQL) {
 
 	case ast.BeginTransaction:
 		if err := c.stack.Begin(); err != nil {
-			panic(errusr.Wrap(s.Pos(), err))
+			panic(errusr.Wrap(s, err))
 		}
 		c.push(virt.BeginTransaction(q))
 
 	case ast.Commit:
 		if err := c.stack.End(); err != nil {
-			panic(errusr.Wrap(s.Pos(), err))
+			panic(errusr.Wrap(s, err))
 		}
 		c.push(virt.CommitTransaction(q))
 
@@ -103,7 +103,7 @@ func (c *compiler) compileTransactor(s *ast.SQL) {
 
 	case ast.Release:
 		if err := c.stack.Release(name); err != nil {
-			panic(errusr.Wrap(s.Pos(), err))
+			panic(errusr.Wrap(s, err))
 		}
 		c.push(virt.UserRelease(name, q))
 	}

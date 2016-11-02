@@ -21,6 +21,6 @@ func (c *compiler) compileAssert(a *ast.Assert) {
 	} else {
 		stmt = c.rewrite(a.Subquery, nil, false)
 	}
-	c.push(virt.ErrPos(a.Pos()))
+	c.push(virt.ErrPos(a))
 	c.push(virt.Assert(msg, stmt))
 }
