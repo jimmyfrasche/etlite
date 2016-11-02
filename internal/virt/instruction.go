@@ -42,7 +42,7 @@ loop:
 }
 
 //Assert returns an assertion.
-func Assert(pos token.Position, msg, query string) Instruction {
+func Assert(pos token.Poser, msg, query string) Instruction {
 	return func(ctx context.Context, m *Machine) error {
 		ret, err := m.conn.Assert(query)
 		if err != nil {
@@ -55,9 +55,9 @@ func Assert(pos token.Position, msg, query string) Instruction {
 	}
 }
 
-func ErrPos(p token.Position) Instruction {
+func ErrPos(p token.Poser) Instruction {
 	return func(ctx context.Context, m *Machine) error {
-		m.pos = p
+		m.pos = p.Pos()
 		return nil
 	}
 }
