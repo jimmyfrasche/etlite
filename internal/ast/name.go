@@ -60,6 +60,17 @@ func NameFromString(name string) Name {
 	}
 }
 
+//Pos reports the original position in input.
+func (n Name) Pos() token.Position {
+	if n.Empty() {
+		return token.Position{}
+	}
+	if n.hasSchema {
+		return n.schema.Pos()
+	}
+	return n.object.Pos()
+}
+
 func (n Name) Empty() bool {
 	return !n.hasObject
 }

@@ -24,11 +24,6 @@ var _ Node = (*Import)(nil)
 
 func (*Import) node() {}
 
-//Pos reports the original position in input.
-func (i *Import) Pos() token.Position {
-	return i.Position
-}
-
 func printCols(w *writer.Writer, cols []string) {
 	for i, c := range cols {
 		w.Str(c)

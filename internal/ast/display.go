@@ -19,11 +19,6 @@ var _ Node = (*Display)(nil)
 
 func (*Display) node() {}
 
-//Pos reports the original position in input.
-func (d *Display) Pos() token.Position {
-	return d.Position
-}
-
 //Print stringifies to a writer.
 func (d *Display) Print(to io.Writer) error {
 	w := writer.New(to)

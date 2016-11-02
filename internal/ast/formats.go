@@ -12,7 +12,7 @@ import (
 //Format represents a format specification in an import or display statement.
 type Format interface {
 	Print(io.Writer) error
-	Pos() token.Position
+	token.Poser
 	fmt()
 }
 
@@ -55,11 +55,6 @@ var _ Format = (*FormatCSV)(nil)
 
 func (*FormatCSV) fmt() {}
 
-//Pos reports the original position in input.
-func (f *FormatCSV) Pos() token.Position {
-	return f.Position
-}
-
 //Print stringifies to a writer.
 func (f *FormatCSV) Print(to io.Writer) error {
 	w := writer.New(to)
@@ -100,11 +95,6 @@ var _ Format = (*FormatRaw)(nil)
 
 func (*FormatRaw) fmt() {}
 
-//Pos reports the original position in input.
-func (f *FormatRaw) Pos() token.Position {
-	return f.Position
-}
-
 //Print stringifies to a writer.
 func (f *FormatRaw) Print(to io.Writer) error {
 	w := writer.New(to)
@@ -135,11 +125,6 @@ type FormatJSON struct {
 var _ Format = (*FormatJSON)(nil)
 
 func (*FormatJSON) fmt() {}
-
-//Pos reports the original position in input.
-func (f *FormatJSON) Pos() token.Position {
-	return f.Position
-}
 
 //Print stringifies to a writer.
 func (f *FormatJSON) Print(to io.Writer) error {

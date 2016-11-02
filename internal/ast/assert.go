@@ -16,11 +16,6 @@ type Assert struct {
 
 func (*Assert) node() {}
 
-//Pos reports the original position in input.
-func (a *Assert) Pos() token.Position {
-	return a.Position
-}
-
 //Print stringifies to a writer.
 func (a *Assert) Print(to io.Writer) error {
 	w := writer.New(to)

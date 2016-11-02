@@ -12,7 +12,7 @@ import (
 type Device interface {
 	//Print for devices does not include TO or FROM.
 	Print(io.Writer) error
-	Pos() token.Position
+	token.Poser
 	dev()
 }
 
@@ -27,7 +27,7 @@ func (*DeviceFile) dev() {}
 
 //Pos reports the original position in input.
 func (d *DeviceFile) Pos() token.Position {
-	return d.Name.Position
+	return d.Name.Pos()
 }
 
 //Print stringifies to a writer.
@@ -45,11 +45,6 @@ type DeviceStdio struct {
 var _ Device = &DeviceStdio{}
 
 func (*DeviceStdio) dev() {}
-
-//Pos reports the original position in input.
-func (d *DeviceStdio) Pos() token.Position {
-	return d.Position
-}
 
 //Print stringifies to a writer.
 func (d *DeviceStdio) Print(w io.Writer) error {

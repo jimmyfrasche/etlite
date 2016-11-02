@@ -23,7 +23,7 @@ func (*Error) node() {}
 
 //Pos reports the original position in input.
 func (e *Error) Pos() token.Position {
-	return e.Token.Position
+	return e.Token.Pos()
 }
 
 //Print stringifies to a writer.

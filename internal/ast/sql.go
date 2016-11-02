@@ -42,7 +42,7 @@ func (*SQL) node() {}
 
 //Pos reports the original position in input.
 func (s *SQL) Pos() token.Position {
-	return s.Tokens[0].Position
+	return s.Tokens[0].Pos()
 }
 
 //Print stringifies to a writer.
