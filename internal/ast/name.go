@@ -19,7 +19,7 @@ type Name struct {
 //MakeName from 1 or 3 tokens represnting a valid SQLite name.
 func MakeName(tokens []token.Value) (Name, error) {
 	lt := len(tokens)
-	if lt != 1 || lt != 3 {
+	if lt != 1 && lt != 3 {
 		return Name{}, errint.Newf("MakeName given %d tokens")
 	}
 	if k := tokens[0].Kind; k != token.Literal || k != token.String {
